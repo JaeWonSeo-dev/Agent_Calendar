@@ -3,7 +3,21 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { askChatbot, bootstrapDefaultCalendar, createChatSession, createEvent, deleteEvent, getDefaultCalendar, listChatMessages, listEvents, updateEvent } from '../../lib/api';
+import ChatPanel from '../../components/workspace/ChatPanel';
+import CalendarBoard from '../../components/workspace/CalendarBoard';
+import EventForm from '../../components/workspace/EventForm';
+import EventList from '../../components/workspace/EventList';
+import {
+  askChatbot,
+  bootstrapDefaultCalendar,
+  createChatSession,
+  createEvent,
+  deleteEvent,
+  getDefaultCalendar,
+  listChatMessages,
+  listEvents,
+  updateEvent,
+} from '../../lib/api';
 import { loadChatSession, loadUser, saveChatSession } from '../../lib/local-store';
 
 type EventItem = {
@@ -172,6 +186,17 @@ export default function WorkspacePage() {
     }
   };
 
+  const handleSelectDate = (isoDate: string) => {
+    const start = `${isoDate}T09:00`;
+    const end = `${isoDate}T10:00`;
+    setStartAt(start);
+    setEndAt(end);
+    if (!title) {
+      setTitle('새 일정');
+    }
+    setStatus(`${isoDate} 날짜를 선택해서 입력칸에 반영해뒀다냥.`);
+  };
+
   return (
     <main style={{ display: 'flex', minHeight: '100vh', fontFamily: 'sans-serif' }}>
       <section style={{ width: '70%', borderRight: '1px solid #ddd', padding: 24 }}>
@@ -179,62 +204,31 @@ export default function WorkspacePage() {
         <p>모든 사용자가 같은 캘린더를 함께 쓰는 협업형 화면이다.</p>
         {status ? <p>{status}</p> : null}
 
-        <div style={{ marginTop: 24, border: '1px solid #ddd', borderRadius: 12, padding: 16 }}>
-          <h2>{editingEventId ? '일정 수정' : '일정 추가'}</h2>
-          <div style={{ display: 'grid', gap: 12, marginTop: 12 }}>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="일정 제목" style={{ padding: 10 }} />
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="설명" style={{ padding: 10, minHeight: 80 }} />
-            <input value={startAt} onChange={(e) => setStartAt(e.target.value)} type="datetime-local" style={{ padding: 10 }} />
-            <input value={endAt} onChange={(e) => setEndAt(e.target.value)} type="datetime-local" style={{ padding: 10 }} />
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={handleCreateOrUpdateEvent} type="button" style={{ padding: '10px 14px', width: 160 }}>
-                {editingEventId ? '일정 수정' : '일정 추가'}
-              </button>
-              {editingEventId ? <button onClick={resetForm} type="button" style={{ padding: '10px 14px' }}>취소</button> : null}
-            </div>
-          </div>
-        </div>
+        <CalendarBoard events={events} onSelectDate={handleSelectDate} />
 
-        <div style={{ marginTop: 24, border: '1px solid #ddd', borderRadius: 12, padding: 16 }}>
-          <h2>공유 캘린더 일정</h2>
-          <ul style={{ paddingLeft: 20, marginTop: 16 }}>
-            {visibleEvents.length === 0 ? <li>아직 등록된 일정이 없다냥.</li> : null}
-            {visibleEvents.map((event) => (
-              <li key={event.id} style={{ marginBottom: 12 }}>
-                <div>
-                  <strong>{new Date(event.start_at).toLocaleString()}</strong> - {event.title}
-                  <span style={{ marginLeft: 8, color: '#666' }}>작성자 ID: {event.owner_user_id}</span>
-                </div>
-                {event.description ? <div style={{ color: '#555', marginTop: 4 }}>{event.description}</div> : null}
-                <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
-                  <button onClick={() => handleEdit(event)} type="button">수정</button>
-                  <button onClick={() => handleDelete(event.id)} type="button">삭제</button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <EventForm
+          title={title}
+          description={description}
+          startAt={startAt}
+          endAt={endAt}
+          editing={Boolean(editingEventId)}
+          onTitleChange={setTitle}
+          onDescriptionChange={setDescription}
+          onStartAtChange={setStartAt}
+          onEndAtChange={setEndAt}
+          onSubmit={handleCreateOrUpdateEvent}
+          onCancel={resetForm}
+        />
+
+        <EventList events={visibleEvents} onEdit={handleEdit} onDelete={handleDelete} />
       </section>
 
-      <aside style={{ width: '30%', padding: 24, display: 'flex', flexDirection: 'column' }}>
-        <h2>LLM Chatbot</h2>
-        <p>사용자별 대화는 따로 보관되지만, 질문은 공유 캘린더를 기준으로 이어간다.</p>
-
-        <div style={{ flex: 1, border: '1px solid #ddd', borderRadius: 12, padding: 12, marginTop: 16, overflowY: 'auto' }}>
-          {chatLines.length === 0 ? <p>예: 이번주 일정 뭐 있어?</p> : null}
-          {chatLines.map((message, index) => (
-            <div key={index} style={{ marginBottom: 12 }}>
-              <strong>{message.role === 'user' ? 'USER' : 'AGENT'}</strong>
-              <div style={{ whiteSpace: 'pre-wrap' }}>{message.content}</div>
-            </div>
-          ))}
-        </div>
-
-        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-          <input value={chatInput} onChange={(e) => setChatInput(e.target.value)} type="text" placeholder="공유 캘린더에 대해 물어보기" style={{ flex: 1, padding: 10 }} />
-          <button onClick={handleAsk} type="button" style={{ padding: '10px 14px' }}>전송</button>
-        </div>
-      </aside>
+      <ChatPanel
+        chatLines={chatLines}
+        chatInput={chatInput}
+        onChatInputChange={setChatInput}
+        onSend={handleAsk}
+      />
     </main>
   );
 }
