@@ -2,16 +2,20 @@
 
 ## One-command startup
 
-From the project root:
+From the project root, the simplest way is now:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\start-dev.ps1
+npm install
+npm start
 ```
 
-or just double-click / run:
+This runs backend + frontend in the same VSCode terminal using `concurrently`.
 
-```bat
-start-dev.bat
+You can still run backend or frontend alone:
+
+```powershell
+npm run backend
+npm run frontend
 ```
 
 ## What it does

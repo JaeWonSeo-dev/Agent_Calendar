@@ -1,8 +1,13 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+import Field from '../../components/ui/Field';
+import PageContainer from '../../components/ui/PageContainer';
+import PrimaryButton from '../../components/ui/PrimaryButton';
+import StatusMessage from '../../components/ui/StatusMessage';
 import { login } from '../../lib/api';
 import { saveUser } from '../../lib/local-store';
 
@@ -29,27 +34,35 @@ export default function LoginPage() {
   };
 
   return (
-    <main style={{ padding: 24, fontFamily: 'sans-serif', maxWidth: 720, margin: '0 auto' }}>
-      <h1>로그인</h1>
-      <p>로그인 후 온보딩 여부를 확인하고 워크스페이스로 이동한다.</p>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%)' }}>
+      <PageContainer maxWidth={520}>
+        <div style={{ paddingTop: 80 }}>
+          <Link href="/" style={{ color: '#6366f1', textDecoration: 'none' }}>← 홈으로</Link>
+          <div style={{ marginTop: 18, background: '#fff', borderRadius: 20, padding: 28, border: '1px solid #e5e7eb' }}>
+            <h1 style={{ marginTop: 0 }}>로그인</h1>
+            <p style={{ color: '#6b7280' }}>이미 계정이 있으면 여기서 들어오면 된다냥.</p>
 
-      <form style={{ display: 'grid', gap: 16, marginTop: 24 }} onSubmit={(e) => e.preventDefault()}>
-        <label>
-          <div>이메일</div>
-          <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="email@example.com" style={{ width: '100%', padding: 8 }} />
-        </label>
+            <form style={{ display: 'grid', gap: 16, marginTop: 24 }} onSubmit={(e) => e.preventDefault()}>
+              <Field label="이메일">
+                <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="email@example.com" style={{ width: '100%', padding: 10 }} />
+              </Field>
 
-        <label>
-          <div>비밀번호</div>
-          <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="password" style={{ width: '100%', padding: 8 }} />
-        </label>
+              <Field label="비밀번호">
+                <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="password" style={{ width: '100%', padding: 10 }} />
+              </Field>
 
-        <button disabled={loading} onClick={handleLogin} type="button" style={{ padding: 12 }}>
-          {loading ? '처리 중...' : '로그인'}
-        </button>
-      </form>
+              <PrimaryButton disabled={loading} onClick={handleLogin} type="button">
+                {loading ? '처리 중...' : '로그인'}
+              </PrimaryButton>
+            </form>
 
-      {status ? <p style={{ marginTop: 16 }}>{status}</p> : null}
-    </main>
+            <div style={{ marginTop: 18, color: '#6b7280' }}>
+              아직 계정이 없으면 <Link href="/signup">회원가입</Link> 하라냥.
+            </div>
+            <StatusMessage message={status} />
+          </div>
+        </div>
+      </PageContainer>
+    </div>
   );
 }

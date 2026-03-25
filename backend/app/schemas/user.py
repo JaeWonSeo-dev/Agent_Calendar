@@ -14,9 +14,17 @@ class UserSignup(BaseModel):
 class UserOnboardingUpdate(BaseModel):
     display_name: str
     nickname: str
-    birth_date: date
+    birth_date: Optional[date] = None
     profile_image_url: Optional[str] = None
     preferred_event_color: str
+
+
+class UserProfileUpdate(BaseModel):
+    display_name: Optional[str] = None
+    nickname: Optional[str] = None
+    birth_date: Optional[date] = None
+    profile_image_url: Optional[str] = None
+    preferred_event_color: Optional[str] = None
 
 
 class UserRead(BaseModel):

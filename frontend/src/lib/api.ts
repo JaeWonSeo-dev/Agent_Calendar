@@ -4,7 +4,6 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers: {
-      'Content-Type': 'application/json',
       ...(options?.headers ?? {}),
     },
     cache: 'no-store',
@@ -66,6 +65,7 @@ export type EventRead = {
 export async function signup(payload: { email: string; username: string; password: string }) {
   return request<UserRead>('/api/users/signup', {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
 }
@@ -73,6 +73,7 @@ export async function signup(payload: { email: string; username: string; passwor
 export async function login(payload: { email: string; password: string }) {
   return request<UserRead>('/api/users/login', {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
 }
@@ -80,13 +81,37 @@ export async function login(payload: { email: string; password: string }) {
 export async function completeOnboarding(userId: string, payload: {
   display_name: string;
   nickname: string;
-  birth_date: string;
+  birth_date?: string;
   profile_image_url?: string;
   preferred_event_color: string;
 }) {
   return request<UserRead>(`/api/users/${userId}/onboarding`, {
     method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
+  });
+}
+
+export async function updateProfile(userId: string, payload: {
+  display_name?: string;
+  nickname?: string;
+  birth_date?: string;
+  profile_image_url?: string;
+  preferred_event_color?: string;
+}) {
+  return request<UserRead>(`/api/users/${userId}/profile`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function uploadProfileImage(userId: string, file: File) {
+  const formData = new FormData();
+  formData.append('file', file);
+  return request<UserRead>(`/api/users/${userId}/profile-image`, {
+    method: 'POST',
+    body: formData,
   });
 }
 
@@ -122,6 +147,7 @@ export async function createEvent(payload: {
 }) {
   return request<EventRead>('/api/events', {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
 }
@@ -129,6 +155,7 @@ export async function createEvent(payload: {
 export async function updateEvent(eventId: string, payload: Partial<Omit<EventRead, 'id' | 'calendar_id' | 'owner_user_id'>>) {
   return request<EventRead>(`/api/events/${eventId}`, {
     method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
 }
@@ -142,6 +169,7 @@ export async function deleteEvent(eventId: string) {
 export async function createChatSession(payload: { user_id: string; title?: string }) {
   return request<ChatSessionRead>('/api/chat/sessions', {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
 }
@@ -153,6 +181,13 @@ export async function listChatMessages(sessionId: string) {
 export async function askChatbot(sessionId: string, message: string) {
   return request<{ session_id: string; user_message: string; assistant_message: string; context_count: number; event_count: number }>(`/api/chat/sessions/${sessionId}/ask`, {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ message }),
   });
+}
+
+export function absoluteAssetUrl(path?: string | null) {
+  if (!path) return '';
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  return `${API_BASE_URL}${path}`;
 }

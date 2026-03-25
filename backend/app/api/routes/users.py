@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException
+from pathlib import Path
+from uuid import uuid4
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlmodel import Session, select
 
 from app.api.deps import get_db_session
@@ -6,11 +9,14 @@ from app.models.calendar import Calendar
 from app.models.calendar_member import CalendarMember, CalendarMemberRole
 from app.models.user import User
 from app.schemas.auth import LoginRequest
-from app.schemas.user import UserOnboardingUpdate, UserRead, UserSignup
+from app.schemas.user import UserOnboardingUpdate, UserProfileUpdate, UserRead, UserSignup
 from app.services.auth_service import AuthService
 
 router = APIRouter()
 auth_service = AuthService()
+
+UPLOAD_DIR = Path(__file__).resolve().parents[3] / "uploads" / "profiles"
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
 @router.post("/signup", response_model=UserRead)
@@ -80,6 +86,43 @@ def complete_onboarding(user_id: str, payload: UserOnboardingUpdate, session: Se
     user.color = payload.preferred_event_color
     user.onboarding_completed = True
 
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    return user
+
+
+@router.patch("/{user_id}/profile", response_model=UserRead)
+def update_profile(user_id: str, payload: UserProfileUpdate, session: Session = Depends(get_db_session)) -> User:
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    for key, value in payload.model_dump(exclude_unset=True).items():
+        setattr(user, key, value)
+
+    if payload.preferred_event_color:
+        user.color = payload.preferred_event_color
+
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    return user
+
+
+@router.post("/{user_id}/profile-image", response_model=UserRead)
+def upload_profile_image(user_id: str, file: UploadFile = File(...), session: Session = Depends(get_db_session)) -> User:
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    suffix = Path(file.filename or "avatar.png").suffix or ".png"
+    filename = f"{user_id}_{uuid4().hex}{suffix}"
+    target = UPLOAD_DIR / filename
+    content = file.file.read()
+    target.write_bytes(content)
+
+    user.profile_image_url = f"/uploads/profiles/{filename}"
     session.add(user)
     session.commit()
     session.refresh(user)

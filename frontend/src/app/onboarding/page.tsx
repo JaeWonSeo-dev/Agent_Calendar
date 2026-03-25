@@ -1,14 +1,19 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { completeOnboarding } from '../../lib/api';
+import Field from '../../components/ui/Field';
+import PageContainer from '../../components/ui/PageContainer';
+import PrimaryButton from '../../components/ui/PrimaryButton';
+import StatusMessage from '../../components/ui/StatusMessage';
+import { absoluteAssetUrl, completeOnboarding, uploadProfileImage } from '../../lib/api';
 import { loadUser, saveUser } from '../../lib/local-store';
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const [profileImageUrl, setProfileImageUrl] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState('');
   const [nickname, setNickname] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [birthDate, setBirthDate] = useState('');
@@ -17,7 +22,7 @@ export default function OnboardingPage() {
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    const user = loadUser<{ id: string; username?: string; display_name?: string }>();
+    const user = loadUser<{ id: string; username?: string; display_name?: string; profile_image_url?: string }>();
     if (!user?.id) {
       router.push('/login');
       return;
@@ -25,62 +30,81 @@ export default function OnboardingPage() {
     setUserId(user.id);
     setDisplayName(user.display_name ?? user.username ?? '');
     setNickname(user.username ?? '');
+    if (user.profile_image_url) setPreviewUrl(absoluteAssetUrl(user.profile_image_url));
   }, [router]);
+
+  const filePreview = useMemo(() => {
+    if (selectedFile) return URL.createObjectURL(selectedFile);
+    return previewUrl;
+  }, [selectedFile, previewUrl]);
 
   const handleSubmit = async () => {
     if (!userId) return;
     try {
-      setStatus('온보딩 저장 중...');
+      setStatus('프로필 설정 저장 중...');
+      let uploadedProfileImageUrl: string | undefined = undefined;
+      if (selectedFile) {
+        const userAfterUpload = await uploadProfileImage(userId, selectedFile);
+        uploadedProfileImageUrl = userAfterUpload.profile_image_url ?? undefined;
+      }
+
       const updatedUser = await completeOnboarding(userId, {
         display_name: displayName,
         nickname,
-        birth_date: birthDate,
-        profile_image_url: profileImageUrl,
+        birth_date: birthDate || undefined,
+        profile_image_url: uploadedProfileImageUrl,
         preferred_event_color: preferredEventColor,
       });
       saveUser(updatedUser);
       setStatus('프로필 설정 완료. 워크스페이스로 이동한다냥.');
       router.push('/workspace');
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : '온보딩 저장 실패');
+      setStatus(error instanceof Error ? error.message : '프로필 설정 저장 실패');
     }
   };
 
   return (
-    <main style={{ padding: 24, fontFamily: 'sans-serif', maxWidth: 720, margin: '0 auto' }}>
-      <h1>First Login Setup</h1>
-      <p>최초 로그인 사용자의 프로필 설정 화면이다.</p>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%)' }}>
+      <PageContainer maxWidth={720}>
+        <div style={{ paddingTop: 70 }}>
+          <div style={{ marginTop: 18, background: '#fff', borderRadius: 20, padding: 28, border: '1px solid #e5e7eb' }}>
+            <h1 style={{ marginTop: 0 }}>프로필 설정</h1>
+            <p style={{ color: '#6b7280' }}>처음 한 번만 기본 프로필을 잡아두면 된다냥. 나중에 프로필 관리 탭에서도 수정할 수 있게 할 거다냥.</p>
 
-      <form style={{ display: 'grid', gap: 16, marginTop: 24 }} onSubmit={(e) => e.preventDefault()}>
-        <label>
-          <div>프로필 이미지 URL</div>
-          <input value={profileImageUrl} onChange={(e) => setProfileImageUrl(e.target.value)} type="text" placeholder="https://..." style={{ width: '100%', padding: 8 }} />
-        </label>
+            <form style={{ display: 'grid', gap: 16, marginTop: 24 }} onSubmit={(e) => e.preventDefault()}>
+              <Field label="프로필 이미지 파일">
+                <input type="file" accept="image/*" onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)} style={{ width: '100%', padding: 10 }} />
+              </Field>
 
-        <label>
-          <div>표시 이름</div>
-          <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} type="text" placeholder="표시 이름" style={{ width: '100%', padding: 8 }} />
-        </label>
+              {filePreview ? (
+                <div>
+                  <img src={filePreview} alt="profile preview" style={{ width: 96, height: 96, objectFit: 'cover', borderRadius: 999, border: '1px solid #ddd' }} />
+                </div>
+              ) : null}
 
-        <label>
-          <div>닉네임</div>
-          <input value={nickname} onChange={(e) => setNickname(e.target.value)} type="text" placeholder="닉네임 입력" style={{ width: '100%', padding: 8 }} />
-        </label>
+              <Field label="표시 이름">
+                <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} type="text" placeholder="표시 이름" style={{ width: '100%', padding: 10 }} />
+              </Field>
 
-        <label>
-          <div>생일</div>
-          <input value={birthDate} onChange={(e) => setBirthDate(e.target.value)} type="date" style={{ width: '100%', padding: 8 }} />
-        </label>
+              <Field label="닉네임">
+                <input value={nickname} onChange={(e) => setNickname(e.target.value)} type="text" placeholder="닉네임 입력" style={{ width: '100%', padding: 10 }} />
+              </Field>
 
-        <label>
-          <div>일정 색상</div>
-          <input value={preferredEventColor} onChange={(e) => setPreferredEventColor(e.target.value)} type="color" style={{ width: 80, height: 40 }} />
-        </label>
+              <Field label="생일">
+                <input value={birthDate} onChange={(e) => setBirthDate(e.target.value)} type="date" style={{ width: '100%', padding: 10 }} />
+              </Field>
 
-        <button onClick={handleSubmit} type="button" style={{ padding: 12 }}>프로필 설정 완료</button>
-      </form>
+              <Field label="일정 색상">
+                <input value={preferredEventColor} onChange={(e) => setPreferredEventColor(e.target.value)} type="color" style={{ width: 80, height: 40 }} />
+              </Field>
 
-      {status ? <p style={{ marginTop: 16 }}>{status}</p> : null}
-    </main>
+              <PrimaryButton onClick={handleSubmit} type="button">프로필 설정 완료</PrimaryButton>
+            </form>
+
+            <StatusMessage message={status} />
+          </div>
+        </div>
+      </PageContainer>
+    </div>
   );
 }
