@@ -1,5 +1,5 @@
 from pathlib import Path
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlmodel import Session, select
@@ -9,7 +9,7 @@ from app.models.calendar import Calendar
 from app.models.calendar_member import CalendarMember, CalendarMemberRole
 from app.models.user import User
 from app.schemas.auth import LoginRequest
-from app.schemas.user import UserOnboardingUpdate, UserProfileUpdate, UserRead, UserSignup
+from app.schemas.user import UserOnboardingUpdate, UserProfileUpdate, UserRead, UserSignup, UserSummary
 from app.services.auth_service import AuthService
 
 router = APIRouter()
@@ -65,15 +65,20 @@ def login(payload: LoginRequest, session: Session = Depends(get_db_session)) -> 
 
 
 @router.get("/{user_id}", response_model=UserRead)
-def get_user(user_id: str, session: Session = Depends(get_db_session)) -> User:
+def get_user(user_id: UUID, session: Session = Depends(get_db_session)) -> User:
     user = session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
 
+@router.get("", response_model=list[UserSummary])
+def list_users(session: Session = Depends(get_db_session)) -> list[User]:
+    return list(session.exec(select(User)).all())
+
+
 @router.patch("/{user_id}/onboarding", response_model=UserRead)
-def complete_onboarding(user_id: str, payload: UserOnboardingUpdate, session: Session = Depends(get_db_session)) -> User:
+def complete_onboarding(user_id: UUID, payload: UserOnboardingUpdate, session: Session = Depends(get_db_session)) -> User:
     user = session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -81,7 +86,8 @@ def complete_onboarding(user_id: str, payload: UserOnboardingUpdate, session: Se
     user.display_name = payload.display_name
     user.nickname = payload.nickname
     user.birth_date = payload.birth_date
-    user.profile_image_url = payload.profile_image_url
+    if payload.profile_image_url is not None:
+        user.profile_image_url = payload.profile_image_url
     user.preferred_event_color = payload.preferred_event_color
     user.color = payload.preferred_event_color
     user.onboarding_completed = True
@@ -93,7 +99,7 @@ def complete_onboarding(user_id: str, payload: UserOnboardingUpdate, session: Se
 
 
 @router.patch("/{user_id}/profile", response_model=UserRead)
-def update_profile(user_id: str, payload: UserProfileUpdate, session: Session = Depends(get_db_session)) -> User:
+def update_profile(user_id: UUID, payload: UserProfileUpdate, session: Session = Depends(get_db_session)) -> User:
     user = session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -111,7 +117,7 @@ def update_profile(user_id: str, payload: UserProfileUpdate, session: Session = 
 
 
 @router.post("/{user_id}/profile-image", response_model=UserRead)
-def upload_profile_image(user_id: str, file: UploadFile = File(...), session: Session = Depends(get_db_session)) -> User:
+def upload_profile_image(user_id: UUID, file: UploadFile = File(...), session: Session = Depends(get_db_session)) -> User:
     user = session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")

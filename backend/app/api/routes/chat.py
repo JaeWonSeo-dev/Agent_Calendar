@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select
@@ -17,7 +18,7 @@ calendar_service = CalendarService()
 
 
 @router.get("/sessions", response_model=list[ChatSessionRead])
-def list_sessions(user_id: str | None = Query(default=None), session: Session = Depends(get_db_session)) -> list[ChatSession]:
+def list_sessions(user_id: UUID | None = Query(default=None), session: Session = Depends(get_db_session)) -> list[ChatSession]:
     statement = select(ChatSession)
     if user_id:
         statement = statement.where(ChatSession.user_id == user_id)
@@ -35,7 +36,7 @@ def create_session(payload: ChatSessionCreate, session: Session = Depends(get_db
 
 
 @router.get("/sessions/{session_id}/messages", response_model=list[ChatMessageRead])
-def list_messages(session_id: str, session: Session = Depends(get_db_session)) -> list[ChatMessage]:
+def list_messages(session_id: UUID, session: Session = Depends(get_db_session)) -> list[ChatMessage]:
     statement = select(ChatMessage).where(ChatMessage.session_id == session_id).order_by(ChatMessage.created_at.asc())
     return list(session.exec(statement).all())
 
@@ -57,7 +58,7 @@ def create_message(payload: ChatMessageCreate, session: Session = Depends(get_db
 
 
 @router.post("/sessions/{session_id}/ask")
-def ask_chatbot(session_id: str, body: dict, session: Session = Depends(get_db_session)) -> dict:
+def ask_chatbot(session_id: UUID, body: dict, session: Session = Depends(get_db_session)) -> dict:
     chat_session = session.get(ChatSession, session_id)
     if not chat_session:
         raise HTTPException(status_code=404, detail="Chat session not found")
@@ -85,7 +86,7 @@ def ask_chatbot(session_id: str, body: dict, session: Session = Depends(get_db_s
     end_window = now + timedelta(days=7)
     events = calendar_service.list_events_in_range(
         session=session,
-        calendar_id=str(default_calendar.id) if default_calendar else None,
+        calendar_id=default_calendar.id if default_calendar else None,
         start_at=now,
         end_at=end_window,
     )
@@ -113,7 +114,7 @@ def ask_chatbot(session_id: str, body: dict, session: Session = Depends(get_db_s
     session.refresh(assistant_message)
 
     return {
-        "session_id": session_id,
+        "session_id": str(session_id),
         "user_message": user_message.content,
         "assistant_message": assistant_message.content,
         "context_count": len(context),

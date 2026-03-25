@@ -1,4 +1,5 @@
 from datetime import datetime
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select
@@ -12,8 +13,8 @@ router = APIRouter()
 
 @router.get("", response_model=list[EventRead])
 def list_events(
-    calendar_id: str | None = Query(default=None),
-    owner_user_id: str | None = Query(default=None),
+    calendar_id: UUID | None = Query(default=None),
+    owner_user_id: UUID | None = Query(default=None),
     start_at: datetime | None = Query(default=None),
     end_at: datetime | None = Query(default=None),
     session: Session = Depends(get_db_session),
@@ -40,7 +41,7 @@ def create_event(payload: EventCreate, session: Session = Depends(get_db_session
 
 
 @router.get("/{event_id}", response_model=EventRead)
-def get_event(event_id: str, session: Session = Depends(get_db_session)) -> Event:
+def get_event(event_id: UUID, session: Session = Depends(get_db_session)) -> Event:
     event = session.get(Event, event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
@@ -48,7 +49,7 @@ def get_event(event_id: str, session: Session = Depends(get_db_session)) -> Even
 
 
 @router.patch("/{event_id}", response_model=EventRead)
-def update_event(event_id: str, payload: EventUpdate, session: Session = Depends(get_db_session)) -> Event:
+def update_event(event_id: UUID, payload: EventUpdate, session: Session = Depends(get_db_session)) -> Event:
     event = session.get(Event, event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
@@ -63,7 +64,7 @@ def update_event(event_id: str, payload: EventUpdate, session: Session = Depends
 
 
 @router.delete("/{event_id}")
-def delete_event(event_id: str, session: Session = Depends(get_db_session)) -> dict:
+def delete_event(event_id: UUID, session: Session = Depends(get_db_session)) -> dict:
     event = session.get(Event, event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")

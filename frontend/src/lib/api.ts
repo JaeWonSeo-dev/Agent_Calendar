@@ -30,6 +30,14 @@ export type UserRead = {
   onboarding_completed: boolean;
 };
 
+export type UserSummary = {
+  id: string;
+  display_name: string;
+  nickname?: string | null;
+  preferred_event_color?: string | null;
+  profile_image_url?: string | null;
+};
+
 export type ChatSessionRead = {
   id: string;
   user_id: string;
@@ -76,6 +84,10 @@ export async function login(payload: { email: string; password: string }) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
+}
+
+export async function listUsers() {
+  return request<UserSummary[]>('/api/users');
 }
 
 export async function completeOnboarding(userId: string, payload: {

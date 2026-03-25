@@ -38,3 +38,11 @@ class UserRead(BaseModel):
     profile_image_url: Optional[str] = None
     preferred_event_color: Optional[str] = None
     onboarding_completed: bool
+
+
+class UserSummary(BaseModel):
+    id: UUID
+    display_name: str
+    nickname: Optional[str] = None
+    preferred_event_color: Optional[str] = None
+    profile_image_url: Optional[str] = None

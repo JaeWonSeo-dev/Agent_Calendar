@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+import GlobalMenuBar from '../../components/workspace/GlobalMenuBar';
 import Field from '../../components/ui/Field';
 import PageContainer from '../../components/ui/PageContainer';
 import PrimaryButton from '../../components/ui/PrimaryButton';
@@ -65,11 +66,13 @@ export default function OnboardingPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%)' }}>
-      <PageContainer maxWidth={720}>
-        <div style={{ paddingTop: 70 }}>
-          <div style={{ marginTop: 18, background: '#fff', borderRadius: 20, padding: 28, border: '1px solid #e5e7eb' }}>
+      <GlobalMenuBar title="Shared Calendar" onOpenProfile={() => router.push('/profile')} />
+
+      <PageContainer maxWidth={760}>
+        <div style={{ paddingTop: 40 }}>
+          <div style={{ marginTop: 18, background: '#fff', borderRadius: 24, padding: 28, border: '1px solid #e5e7eb', boxShadow: '0 18px 50px rgba(15, 23, 42, 0.06)' }}>
             <h1 style={{ marginTop: 0 }}>프로필 설정</h1>
-            <p style={{ color: '#6b7280' }}>처음 한 번만 기본 프로필을 잡아두면 된다냥. 나중에 프로필 관리 탭에서도 수정할 수 있게 할 거다냥.</p>
+            <p style={{ color: '#6b7280' }}>처음 한 번만 기본 프로필을 잡아두면 된다냥. 생일도 여기서 바로 입력할 수 있다냥.</p>
 
             <form style={{ display: 'grid', gap: 16, marginTop: 24 }} onSubmit={(e) => e.preventDefault()}>
               <Field label="프로필 이미지 파일">

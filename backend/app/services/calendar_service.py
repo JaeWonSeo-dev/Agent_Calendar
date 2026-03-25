@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Any
+from uuid import UUID
 
 from sqlmodel import Session, select
 
@@ -15,10 +16,10 @@ class CalendarService:
         self,
         *,
         session: Session,
-        user_id: str | None = None,
+        user_id: UUID | None = None,
         start_at: datetime | None = None,
         end_at: datetime | None = None,
-        calendar_id: str | None = None,
+        calendar_id: UUID | None = None,
     ) -> list[Event]:
         statement = select(Event)
         if calendar_id:
