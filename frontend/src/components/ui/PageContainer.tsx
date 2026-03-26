@@ -10,7 +10,6 @@ export default function PageContainer({ children, maxWidth = 960 }: Props) {
     <main
       style={{
         padding: 24,
-        fontFamily: 'sans-serif',
         maxWidth,
         margin: '0 auto',
       }}

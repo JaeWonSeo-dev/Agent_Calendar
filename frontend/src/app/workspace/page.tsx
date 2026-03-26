@@ -279,7 +279,7 @@ export default function WorkspacePage() {
   };
 
   return (
-    <main style={{ minHeight: '100vh', fontFamily: 'Inter, Pretendard, sans-serif', background: 'linear-gradient(135deg, #f7f9ff 0%, #f3fbf7 100%)', color: '#111827' }}>
+    <main style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f7f9ff 0%, #f3fbf7 100%)', color: '#111827' }}>
       <GlobalMenuBar
         title={calendarName}
         active="calendar"

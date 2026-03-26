@@ -14,7 +14,7 @@ export default function GlobalMenuBar({ title, onOpenCalendar, onOpenProfile, ac
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: '16px 24px',
-        background: 'rgba(255,255,255,0.92)',
+        background: 'rgba(255,255,255,0.96)',
         borderBottom: '1px solid #e5e7eb',
         backdropFilter: 'blur(14px)',
         position: 'sticky',
@@ -28,7 +28,7 @@ export default function GlobalMenuBar({ title, onOpenCalendar, onOpenProfile, ac
         <strong style={{ fontSize: 18 }}>{title}</strong>
       </div>
 
-      <nav style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <nav style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
         <button
           onClick={onOpenCalendar}
           type="button"
@@ -39,6 +39,8 @@ export default function GlobalMenuBar({ title, onOpenCalendar, onOpenProfile, ac
             background: active === 'calendar' ? '#111827' : '#fff',
             color: active === 'calendar' ? '#fff' : '#111827',
             cursor: 'pointer',
+            whiteSpace: 'nowrap',
+            fontFamily: 'inherit',
           }}
         >
           캘린더
@@ -53,6 +55,8 @@ export default function GlobalMenuBar({ title, onOpenCalendar, onOpenProfile, ac
             background: active === 'profile' ? '#111827' : '#fff',
             color: active === 'profile' ? '#fff' : '#111827',
             cursor: 'pointer',
+            whiteSpace: 'nowrap',
+            fontFamily: 'inherit',
           }}
         >
           프로필 관리
