@@ -283,8 +283,8 @@ export default function WorkspacePage() {
       <GlobalMenuBar
         title={calendarName}
         active="calendar"
-        onOpenCalendar={() => router.push('/workspace')}
-        onOpenProfile={() => router.push('/profile')}
+        onOpenCalendar={() => window.location.href = '/workspace'}
+        onOpenProfile={() => window.location.href = '/profile'}
       />
 
       <div style={{ display: 'flex', minHeight: 'calc(100vh - 73px)' }}>

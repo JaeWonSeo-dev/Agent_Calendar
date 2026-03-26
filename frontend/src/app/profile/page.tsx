@@ -98,8 +98,8 @@ export default function ProfilePage() {
       <GlobalMenuBar
         title="Shared Calendar"
         active="profile"
-        onOpenCalendar={() => router.push('/workspace')}
-        onOpenProfile={() => router.push('/profile')}
+        onOpenCalendar={() => window.location.href = '/workspace'}
+        onOpenProfile={() => window.location.href = '/profile'}
       />
 
       <PageContainer maxWidth={1040}>
