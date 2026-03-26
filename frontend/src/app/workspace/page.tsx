@@ -280,7 +280,12 @@ export default function WorkspacePage() {
 
   return (
     <main style={{ minHeight: '100vh', fontFamily: 'Inter, Pretendard, sans-serif', background: 'linear-gradient(135deg, #f7f9ff 0%, #f3fbf7 100%)', color: '#111827' }}>
-      <GlobalMenuBar title={calendarName} onOpenProfile={() => router.push('/profile')} />
+      <GlobalMenuBar
+        title={calendarName}
+        active="calendar"
+        onOpenCalendar={() => router.push('/workspace')}
+        onOpenProfile={() => router.push('/profile')}
+      />
 
       <div style={{ display: 'flex', minHeight: 'calc(100vh - 73px)' }}>
         <section style={{ width: '70%', borderRight: '1px solid #e5e7eb', padding: 24 }}>

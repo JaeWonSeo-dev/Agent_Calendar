@@ -1,3 +1,7 @@
+'use client';
+
+import { useState } from 'react';
+
 import { absoluteAssetUrl } from '../../lib/api';
 
 type UserSummary = {
@@ -15,7 +19,11 @@ type Props = {
 };
 
 export default function UserProfileModal({ user, onClose }: Props) {
+  const [imageFailed, setImageFailed] = useState(false);
+
   if (!user) return null;
+
+  const imageSrc = imageFailed ? '' : absoluteAssetUrl(user.profile_image_url);
 
   return (
     <div
@@ -48,8 +56,8 @@ export default function UserProfileModal({ user, onClose }: Props) {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 18 }}>
           <div style={{ width: 72, height: 72, borderRadius: 999, overflow: 'hidden', border: `3px solid ${user.preferred_event_color || '#c7d2fe'}` }}>
-            {user.profile_image_url ? (
-              <img src={absoluteAssetUrl(user.profile_image_url)} alt={user.nickname || user.display_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            {imageSrc ? (
+              <img src={imageSrc} alt={user.nickname || user.display_name} onError={() => setImageFailed(true)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : (
               <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', fontWeight: 700, background: '#f3f4f6' }}>
                 {(user.nickname || user.display_name || '?').slice(0, 1).toUpperCase()}

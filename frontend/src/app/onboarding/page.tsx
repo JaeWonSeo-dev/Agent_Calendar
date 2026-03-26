@@ -66,7 +66,12 @@ export default function OnboardingPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%)' }}>
-      <GlobalMenuBar title="Shared Calendar" onOpenProfile={() => router.push('/profile')} />
+      <GlobalMenuBar
+        title="Shared Calendar"
+        active="profile"
+        onOpenCalendar={() => router.push('/workspace')}
+        onOpenProfile={() => router.push('/profile')}
+      />
 
       <PageContainer maxWidth={760}>
         <div style={{ paddingTop: 40 }}>

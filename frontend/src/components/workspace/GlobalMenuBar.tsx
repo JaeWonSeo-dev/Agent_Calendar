@@ -1,9 +1,11 @@
 type Props = {
   title: string;
+  onOpenCalendar: () => void;
   onOpenProfile: () => void;
+  active?: 'calendar' | 'profile';
 };
 
-export default function GlobalMenuBar({ title, onOpenProfile }: Props) {
+export default function GlobalMenuBar({ title, onOpenCalendar, onOpenProfile, active = 'calendar' }: Props) {
   return (
     <header
       style={{
@@ -28,12 +30,14 @@ export default function GlobalMenuBar({ title, onOpenProfile }: Props) {
 
       <nav style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <button
+          onClick={onOpenCalendar}
           type="button"
           style={{
             padding: '10px 14px',
             borderRadius: 12,
-            border: '1px solid #dbe2ea',
-            background: '#fff',
+            border: active === 'calendar' ? '1px solid #111827' : '1px solid #dbe2ea',
+            background: active === 'calendar' ? '#111827' : '#fff',
+            color: active === 'calendar' ? '#fff' : '#111827',
             cursor: 'pointer',
           }}
         >
@@ -45,9 +49,9 @@ export default function GlobalMenuBar({ title, onOpenProfile }: Props) {
           style={{
             padding: '10px 14px',
             borderRadius: 12,
-            border: '1px solid #111827',
-            background: '#111827',
-            color: '#fff',
+            border: active === 'profile' ? '1px solid #111827' : '1px solid #dbe2ea',
+            background: active === 'profile' ? '#111827' : '#fff',
+            color: active === 'profile' ? '#fff' : '#111827',
             cursor: 'pointer',
           }}
         >

@@ -5,13 +5,14 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlmodel import Session, select
 
 from app.api.deps import get_db_session
+from app.core.paths import PROFILE_UPLOADS_DIR, ensure_upload_dirs
 from app.models.calendar import Calendar
 from app.models.calendar_member import CalendarMember, CalendarMemberRole
 from app.models.user import User
-from app.core.paths import PROFILE_UPLOADS_DIR, ensure_upload_dirs
 from app.schemas.auth import LoginRequest
 from app.schemas.user import UserOnboardingUpdate, UserProfileUpdate, UserRead, UserSignup, UserSummary
 from app.services.auth_service import AuthService
+from app.services.profile_image_service import ProfileImageService
 
 router = APIRouter()
 auth_service = AuthService()
@@ -20,11 +21,11 @@ ensure_upload_dirs()
 UPLOAD_DIR = PROFILE_UPLOADS_DIR
 
 
-@router.post("/signup", response_model=UserRead)
+@router.post('/signup', response_model=UserRead)
 def signup(payload: UserSignup, session: Session = Depends(get_db_session)) -> User:
     existing_user = session.exec(select(User).where(User.email == payload.email)).first()
     if existing_user:
-        raise HTTPException(status_code=400, detail="Email already exists")
+        raise HTTPException(status_code=400, detail='Email already exists')
 
     user = User(
         email=payload.email,
@@ -54,10 +55,10 @@ def signup(payload: UserSignup, session: Session = Depends(get_db_session)) -> U
             )
             session.commit()
 
-    return user
+    return ProfileImageService.normalize_user_profile_image(user)
 
 
-@router.post("/login", response_model=UserRead)
+@router.post('/login', response_model=UserRead)
 def login(payload: LoginRequest, session: Session = Depends(get_db_session)) -> User:
     identifier = payload.identifier.strip()
     user = session.exec(
@@ -66,28 +67,29 @@ def login(payload: LoginRequest, session: Session = Depends(get_db_session)) -> 
         )
     ).first()
     if not user or user.password_hash != auth_service.hash_password(payload.password):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    return user
+        raise HTTPException(status_code=401, detail='Invalid credentials')
+    return ProfileImageService.normalize_user_profile_image(user)
 
 
-@router.get("/{user_id}", response_model=UserRead)
+@router.get('/{user_id}', response_model=UserRead)
 def get_user(user_id: UUID, session: Session = Depends(get_db_session)) -> User:
     user = session.get(User, user_id)
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
+        raise HTTPException(status_code=404, detail='User not found')
+    return ProfileImageService.normalize_user_profile_image(user)
 
 
-@router.get("", response_model=list[UserSummary])
+@router.get('', response_model=list[UserSummary])
 def list_users(session: Session = Depends(get_db_session)) -> list[User]:
-    return list(session.exec(select(User)).all())
+    users = list(session.exec(select(User)).all())
+    return [ProfileImageService.normalize_user_profile_image(user) for user in users]
 
 
-@router.patch("/{user_id}/onboarding", response_model=UserRead)
+@router.patch('/{user_id}/onboarding', response_model=UserRead)
 def complete_onboarding(user_id: UUID, payload: UserOnboardingUpdate, session: Session = Depends(get_db_session)) -> User:
     user = session.get(User, user_id)
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail='User not found')
 
     user.display_name = payload.display_name
     user.nickname = payload.nickname
@@ -101,14 +103,14 @@ def complete_onboarding(user_id: UUID, payload: UserOnboardingUpdate, session: S
     session.add(user)
     session.commit()
     session.refresh(user)
-    return user
+    return ProfileImageService.normalize_user_profile_image(user)
 
 
-@router.patch("/{user_id}/profile", response_model=UserRead)
+@router.patch('/{user_id}/profile', response_model=UserRead)
 def update_profile(user_id: UUID, payload: UserProfileUpdate, session: Session = Depends(get_db_session)) -> User:
     user = session.get(User, user_id)
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail='User not found')
 
     for key, value in payload.model_dump(exclude_unset=True).items():
         setattr(user, key, value)
@@ -119,23 +121,23 @@ def update_profile(user_id: UUID, payload: UserProfileUpdate, session: Session =
     session.add(user)
     session.commit()
     session.refresh(user)
-    return user
+    return ProfileImageService.normalize_user_profile_image(user)
 
 
-@router.post("/{user_id}/profile-image", response_model=UserRead)
+@router.post('/{user_id}/profile-image', response_model=UserRead)
 def upload_profile_image(user_id: UUID, file: UploadFile = File(...), session: Session = Depends(get_db_session)) -> User:
     user = session.get(User, user_id)
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail='User not found')
 
-    suffix = Path(file.filename or "avatar.png").suffix or ".png"
-    filename = f"{user_id}_{uuid4().hex}{suffix}"
+    suffix = Path(file.filename or 'avatar.png').suffix or '.png'
+    filename = f'{user_id}_{uuid4().hex}{suffix}'
     target = UPLOAD_DIR / filename
     content = file.file.read()
     target.write_bytes(content)
 
-    user.profile_image_url = f"/uploads/profiles/{filename}"
+    user.profile_image_url = f'/uploads/profiles/{filename}'
     session.add(user)
     session.commit()
     session.refresh(user)
-    return user
+    return ProfileImageService.normalize_user_profile_image(user)
