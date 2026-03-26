@@ -1,24 +1,26 @@
-import { Gaegu, Nunito } from 'next/font/google';
+import { Hi_Melody, Nunito } from 'next/font/google';
 
-const gaegu = Gaegu({
+const hiMelody = Hi_Melody({
   subsets: ['latin'],
-  weight: ['400', '700'],
+  weight: ['400'],
   variable: '--font-cute',
+  display: 'swap',
 });
 
 const nunito = Nunito({
   subsets: ['latin'],
   weight: ['400', '600', '700', '800'],
   variable: '--font-ui',
+  display: 'swap',
 });
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ko" className={`${gaegu.variable} ${nunito.variable}`}>
+    <html lang="ko" className={`${hiMelody.variable} ${nunito.variable}`}>
       <body
         style={{
           margin: 0,
-          fontFamily: 'var(--font-cute), var(--font-ui), "Malgun Gothic", "Apple SD Gothic Neo", sans-serif',
+          fontFamily: 'var(--font-cute), "Malgun Gothic", "Apple SD Gothic Neo", sans-serif',
         }}
       >
         {children}
