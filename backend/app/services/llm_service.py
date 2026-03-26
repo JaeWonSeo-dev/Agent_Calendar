@@ -18,12 +18,8 @@ class LLMService:
         events = events or []
         context = context or []
 
-        llm_answer = self._answer_with_openai(message=message, context=context, events=events)
-        provider = 'openai'
-
-        if not llm_answer:
-            llm_answer = self._answer_with_gemini(message=message, context=context, events=events)
-            provider = 'gemini'
+        llm_answer = self._answer_with_gemini(message=message, context=context, events=events)
+        provider = 'gemini'
 
         if llm_answer:
             return {
@@ -59,46 +55,6 @@ class LLMService:
             'event_count': len(events),
             'provider': 'fallback',
         }
-
-    def _answer_with_openai(self, *, message: str, context: list[dict[str, Any]], events: list[dict[str, Any]]) -> str | None:
-        if not settings.openai_api_key:
-            return None
-
-        prompt = self._build_prompt(message=message, context=context, events=events)
-        payload = {
-            'model': settings.openai_model,
-            'messages': [
-                {
-                    'role': 'system',
-                    'content': (
-                        'You are a helpful Korean calendar assistant inside a shared calendar app. '
-                        'Answer primarily in Korean. Be concise, practical, and refer to the provided event context when relevant.'
-                    ),
-                },
-                {
-                    'role': 'user',
-                    'content': prompt,
-                },
-            ],
-            'temperature': 0.5,
-        }
-
-        req = request.Request(
-            f"{settings.openai_base_url.rstrip('/')}/chat/completions",
-            data=json.dumps(payload).encode('utf-8'),
-            headers={
-                'Content-Type': 'application/json',
-                'Authorization': f'Bearer {settings.openai_api_key}',
-            },
-            method='POST',
-        )
-
-        try:
-            with request.urlopen(req, timeout=30) as response:
-                data = json.loads(response.read().decode('utf-8'))
-                return data['choices'][0]['message']['content'].strip()
-        except (error.HTTPError, error.URLError, KeyError, IndexError, TimeoutError, json.JSONDecodeError):
-            return None
 
     def _answer_with_gemini(self, *, message: str, context: list[dict[str, Any]], events: list[dict[str, Any]]) -> str | None:
         if not settings.gemini_api_key:

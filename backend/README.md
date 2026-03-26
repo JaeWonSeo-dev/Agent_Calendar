@@ -14,12 +14,12 @@ Create `backend/.env` and set values like this:
 ```env
 DATABASE_URL=sqlite:///./agent_calendar.db
 REDIS_URL=redis://localhost:6379/0
-OPENAI_API_KEY=
-OPENAI_MODEL=gpt-4o-mini
-OPENAI_BASE_URL=https://api.openai.com/v1
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-2.5-flash
+GEMINI_BASE_URL=https://generativelanguage.googleapis.com/v1beta
 ```
 
-- If `OPENAI_API_KEY` is set, the chat route will call the configured OpenAI-compatible model.
+- If `GEMINI_API_KEY` is set, the chat route will call the configured Gemini model.
 - If the key is empty or the request fails, the backend falls back to the local rule-based response.
 
 ## Current status

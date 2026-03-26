@@ -16,6 +16,6 @@ Agent Calendar is a web + bot calendar system.
 
 ## LLM setup
 - Chatbot calls are wired through the backend `LLMService`.
-- Set `OPENAI_API_KEY` in `backend/.env` to enable a real model.
-- Default model: `gpt-4o-mini`
+- Set `GEMINI_API_KEY` in `backend/.env` to enable a real model.
+- Default model: `gemini-2.5-flash`
 - Without a key, chatbot responses fall back to the local rule-based responder.
