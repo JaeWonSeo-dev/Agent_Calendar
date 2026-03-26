@@ -90,6 +90,10 @@ export async function listUsers() {
   return request<UserSummary[]>('/api/users');
 }
 
+export async function getUser(userId: string) {
+  return request<UserRead>(`/api/users/${userId}`);
+}
+
 export async function completeOnboarding(userId: string, payload: {
   display_name: string;
   nickname: string;
