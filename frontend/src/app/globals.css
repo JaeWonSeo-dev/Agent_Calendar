@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Hi+Melody&family=Gamja+Flower&family=Cute+Font&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Hi+Melody&family=Jua&family=Single+Day&display=swap');
 
 :root {
   --font-cute-1: 'Hi Melody', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
@@ -26,7 +26,7 @@ html, body {
 }
 
 body, button, input, textarea, select, option, label, a, div, span, p, h1, h2, h3, h4, h5, h6, strong {
-  font-family: var(--app-font-family);
+  font-family: var(--app-font-family) !important;
 }
 
 * {

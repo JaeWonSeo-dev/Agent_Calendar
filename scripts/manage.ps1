@@ -26,6 +26,13 @@ switch ($Command) {
     }
     'frontend' {
         Set-Location $frontendPath
+        npm run build
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        npm run start
+        break
+    }
+    'frontend-dev' {
+        Set-Location $frontendPath
         npm run dev
         break
     }
@@ -40,6 +47,7 @@ switch ($Command) {
         Write-Host '  npm run frontend' -ForegroundColor White
         Write-Host '  powershell -ExecutionPolicy Bypass -File .\scripts\manage.ps1 backend' -ForegroundColor White
         Write-Host '  powershell -ExecutionPolicy Bypass -File .\scripts\manage.ps1 frontend' -ForegroundColor White
+        Write-Host '  powershell -ExecutionPolicy Bypass -File .\scripts\manage.ps1 frontend-dev' -ForegroundColor White
         break
     }
     default {
