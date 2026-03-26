@@ -71,6 +71,7 @@ export default function OnboardingPage() {
         active="profile"
         onOpenCalendar={() => window.location.href = '/workspace'}
         onOpenProfile={() => window.location.href = '/profile'}
+        onOpenThemes={() => window.location.href = '/themes'}
       />
 
       <PageContainer maxWidth={760}>

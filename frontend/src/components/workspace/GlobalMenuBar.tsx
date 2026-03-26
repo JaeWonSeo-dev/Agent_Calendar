@@ -2,10 +2,22 @@ type Props = {
   title: string;
   onOpenCalendar: () => void;
   onOpenProfile: () => void;
-  active?: 'calendar' | 'profile';
+  onOpenThemes: () => void;
+  active?: 'calendar' | 'profile' | 'themes';
 };
 
-export default function GlobalMenuBar({ title, onOpenCalendar, onOpenProfile, active = 'calendar' }: Props) {
+export default function GlobalMenuBar({ title, onOpenCalendar, onOpenProfile, onOpenThemes, active = 'calendar' }: Props) {
+  const buttonStyle = (key: 'calendar' | 'profile' | 'themes') => ({
+    padding: '10px 14px',
+    borderRadius: 12,
+    border: active === key ? '1px solid #111827' : '1px solid #dbe2ea',
+    background: active === key ? '#111827' : '#fff',
+    color: active === key ? '#fff' : '#111827',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap' as const,
+    fontFamily: 'inherit',
+  });
+
   return (
     <header
       style={{
@@ -20,7 +32,6 @@ export default function GlobalMenuBar({ title, onOpenCalendar, onOpenProfile, ac
         position: 'sticky',
         top: 0,
         zIndex: 100,
-        boxSizing: 'border-box',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -29,38 +40,9 @@ export default function GlobalMenuBar({ title, onOpenCalendar, onOpenProfile, ac
       </div>
 
       <nav style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-        <button
-          onClick={onOpenCalendar}
-          type="button"
-          style={{
-            padding: '10px 14px',
-            borderRadius: 12,
-            border: active === 'calendar' ? '1px solid #111827' : '1px solid #dbe2ea',
-            background: active === 'calendar' ? '#111827' : '#fff',
-            color: active === 'calendar' ? '#fff' : '#111827',
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
-            fontFamily: 'inherit',
-          }}
-        >
-          캘린더
-        </button>
-        <button
-          onClick={onOpenProfile}
-          type="button"
-          style={{
-            padding: '10px 14px',
-            borderRadius: 12,
-            border: active === 'profile' ? '1px solid #111827' : '1px solid #dbe2ea',
-            background: active === 'profile' ? '#111827' : '#fff',
-            color: active === 'profile' ? '#fff' : '#111827',
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
-            fontFamily: 'inherit',
-          }}
-        >
-          프로필 관리
-        </button>
+        <button onClick={onOpenCalendar} type="button" style={buttonStyle('calendar')}>캘린더</button>
+        <button onClick={onOpenProfile} type="button" style={buttonStyle('profile')}>프로필 관리</button>
+        <button onClick={onOpenThemes} type="button" style={buttonStyle('themes')}>테마관리</button>
       </nav>
     </header>
   );

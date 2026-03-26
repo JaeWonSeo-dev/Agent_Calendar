@@ -100,6 +100,7 @@ export default function ProfilePage() {
         active="profile"
         onOpenCalendar={() => window.location.href = '/workspace'}
         onOpenProfile={() => window.location.href = '/profile'}
+        onOpenThemes={() => window.location.href = '/themes'}
       />
 
       <PageContainer maxWidth={1040}>

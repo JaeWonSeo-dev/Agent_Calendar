@@ -285,6 +285,7 @@ export default function WorkspacePage() {
         active="calendar"
         onOpenCalendar={() => window.location.href = '/workspace'}
         onOpenProfile={() => window.location.href = '/profile'}
+        onOpenThemes={() => window.location.href = '/themes'}
       />
 
       <div style={{ display: 'flex', minHeight: 'calc(100vh - 73px)' }}>
