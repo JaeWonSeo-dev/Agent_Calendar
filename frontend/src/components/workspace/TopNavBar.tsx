@@ -1,3 +1,5 @@
+import { absoluteAssetUrl } from '../../lib/api';
+
 type UserSummary = {
   id: string;
   display_name: string;
@@ -56,7 +58,7 @@ export default function TopNavBar({ users, onSelectUser }: Props) {
               }}
             >
               {user.profile_image_url ? (
-                <img src={user.profile_image_url} alt={user.nickname || user.display_name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                <img src={absoluteAssetUrl(user.profile_image_url)} alt={user.nickname || user.display_name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
               ) : (
                 <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', fontWeight: 700, color: '#374151' }}>
                   {(user.nickname || user.display_name || '?').slice(0, 1).toUpperCase()}

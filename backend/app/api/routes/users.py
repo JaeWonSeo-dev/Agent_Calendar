@@ -8,6 +8,7 @@ from app.api.deps import get_db_session
 from app.models.calendar import Calendar
 from app.models.calendar_member import CalendarMember, CalendarMemberRole
 from app.models.user import User
+from app.core.paths import PROFILE_UPLOADS_DIR, ensure_upload_dirs
 from app.schemas.auth import LoginRequest
 from app.schemas.user import UserOnboardingUpdate, UserProfileUpdate, UserRead, UserSignup, UserSummary
 from app.services.auth_service import AuthService

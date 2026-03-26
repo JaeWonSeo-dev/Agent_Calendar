@@ -35,6 +35,8 @@ app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
 @app.on_event("startup")
 def on_startup() -> None:
+    ensure_upload_dirs()
+    migrate_legacy_uploads()
     init_db()
     bootstrap_service = BootstrapService()
     with SessionLocal() as session:
