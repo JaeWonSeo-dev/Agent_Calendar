@@ -21,7 +21,7 @@ switch ($Command) {
         Ensure-BackendVenv
         Set-Location $backendPath
         & $venvActivate
-        uvicorn app.main:app --reload
+        uvicorn app.main:app
         break
     }
     'frontend' {

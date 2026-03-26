@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -18,7 +18,7 @@ llm_service = LLMService()
 calendar_service = CalendarService()
 
 
-@router.get("/sessions", response_model=list[ChatSessionRead])
+@router.get('/sessions', response_model=list[ChatSessionRead])
 def list_sessions(user_id: UUID | None = Query(default=None), session: Session = Depends(get_db_session)) -> list[ChatSession]:
     statement = select(ChatSession)
     if user_id:
@@ -27,7 +27,7 @@ def list_sessions(user_id: UUID | None = Query(default=None), session: Session =
     return list(session.exec(statement).all())
 
 
-@router.post("/sessions", response_model=ChatSessionRead)
+@router.post('/sessions', response_model=ChatSessionRead)
 def create_session(payload: ChatSessionCreate, session: Session = Depends(get_db_session)) -> ChatSession:
     chat_session = ChatSession(**payload.model_dump())
     session.add(chat_session)
@@ -36,17 +36,17 @@ def create_session(payload: ChatSessionCreate, session: Session = Depends(get_db
     return chat_session
 
 
-@router.get("/sessions/{session_id}/messages", response_model=list[ChatMessageRead])
+@router.get('/sessions/{session_id}/messages', response_model=list[ChatMessageRead])
 def list_messages(session_id: UUID, session: Session = Depends(get_db_session)) -> list[ChatMessage]:
     statement = select(ChatMessage).where(ChatMessage.session_id == session_id).order_by(ChatMessage.created_at.asc())
     return list(session.exec(statement).all())
 
 
-@router.post("/messages", response_model=ChatMessageRead)
+@router.post('/messages', response_model=ChatMessageRead)
 def create_message(payload: ChatMessageCreate, session: Session = Depends(get_db_session)) -> ChatMessage:
     chat_session = session.get(ChatSession, payload.session_id)
     if not chat_session:
-        raise HTTPException(status_code=404, detail="Chat session not found")
+        raise HTTPException(status_code=404, detail='Chat session not found')
 
     message = ChatMessage(**payload.model_dump())
     chat_session.last_message_at = datetime.now(timezone.utc)
@@ -58,40 +58,44 @@ def create_message(payload: ChatMessageCreate, session: Session = Depends(get_db
     return message
 
 
-@router.post("/sessions/{session_id}/ask")
+@router.post('/sessions/{session_id}/ask')
 def ask_chatbot(session_id: UUID, body: dict, session: Session = Depends(get_db_session)) -> dict:
     chat_session = session.get(ChatSession, session_id)
     if not chat_session:
-        raise HTTPException(status_code=404, detail="Chat session not found")
+        raise HTTPException(status_code=404, detail='Chat session not found')
 
-    user_message_text = str(body.get("message", "")).strip()
+    user_message_text = str(body.get('message', '')).strip()
     if not user_message_text:
-        raise HTTPException(status_code=400, detail="Message is required")
+        raise HTTPException(status_code=400, detail='Message is required')
 
     history_statement = select(ChatMessage).where(ChatMessage.session_id == session_id).order_by(ChatMessage.created_at.asc())
     history = list(session.exec(history_statement).all())
     context = chat_service.build_agent_style_context([
-        {"role": msg.role.value, "content": msg.content} for msg in history
+        {'role': msg.role.value, 'content': msg.content} for msg in history
     ])
 
     user_message = ChatMessage(
         session_id=chat_session.id,
         user_id=chat_session.user_id,
-        role="user",
+        role='user',
         content=user_message_text,
     )
     session.add(user_message)
 
     default_calendar = calendar_service.get_default_calendar(session)
-    now = datetime.now(timezone.utc) - timedelta(days=7)
-    end_window = datetime.now(timezone.utc) + timedelta(days=30)
-    events = calendar_service.list_events_in_range(
-        session=session,
-        calendar_id=default_calendar.id if default_calendar else None,
-        start_at=now,
-        end_at=end_window,
-    )
+    events: list[Event] = []
+    if default_calendar:
+        events = list(
+            session.exec(
+                select(Event)
+                .where(Event.calendar_id == default_calendar.id)
+                .order_by(Event.start_at.asc())
+            ).all()
+        )
+    if not events:
+        events = list(session.exec(select(Event).order_by(Event.start_at.asc())).all())
     serialized_events = calendar_service.serialize_events(events)
+    debug_event_titles = [event.title for event in events[:10]]
 
     llm_result = llm_service.answer_schedule_question(
         user_id=str(chat_session.user_id),
@@ -103,8 +107,8 @@ def ask_chatbot(session_id: UUID, body: dict, session: Session = Depends(get_db_
     assistant_message = ChatMessage(
         session_id=chat_session.id,
         user_id=chat_session.user_id,
-        role="assistant",
-        content=llm_result["message"],
+        role='assistant',
+        content=llm_result['message'],
     )
     chat_session.last_message_at = datetime.now(timezone.utc)
 
@@ -115,9 +119,9 @@ def ask_chatbot(session_id: UUID, body: dict, session: Session = Depends(get_db_
     session.refresh(assistant_message)
 
     return {
-        "session_id": str(session_id),
-        "user_message": user_message.content,
-        "assistant_message": assistant_message.content,
-        "context_count": len(context),
-        "event_count": len(serialized_events),
+        'session_id': str(session_id),
+        'user_message': user_message.content,
+        'assistant_message': assistant_message.content,
+        'context_count': len(context),
+        'event_count': len(serialized_events),
     }
