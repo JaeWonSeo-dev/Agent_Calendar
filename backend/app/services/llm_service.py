@@ -19,6 +19,12 @@ class LLMService:
         context = context or []
 
         llm_answer = self._answer_with_openai(message=message, context=context, events=events)
+        provider = 'openai'
+
+        if not llm_answer:
+            llm_answer = self._answer_with_gemini(message=message, context=context, events=events)
+            provider = 'gemini'
+
         if llm_answer:
             return {
                 'message': llm_answer,
@@ -26,7 +32,7 @@ class LLMService:
                 'question': message,
                 'context_count': len(context),
                 'event_count': len(events),
-                'provider': 'openai',
+                'provider': provider,
             }
 
         lower = message.lower()
@@ -91,6 +97,45 @@ class LLMService:
             with request.urlopen(req, timeout=30) as response:
                 data = json.loads(response.read().decode('utf-8'))
                 return data['choices'][0]['message']['content'].strip()
+        except (error.HTTPError, error.URLError, KeyError, IndexError, TimeoutError, json.JSONDecodeError):
+            return None
+
+    def _answer_with_gemini(self, *, message: str, context: list[dict[str, Any]], events: list[dict[str, Any]]) -> str | None:
+        if not settings.gemini_api_key:
+            return None
+
+        prompt = self._build_prompt(message=message, context=context, events=events)
+        payload = {
+            'contents': [
+                {
+                    'parts': [
+                        {
+                            'text': (
+                                'You are a helpful Korean calendar assistant inside a shared calendar app. '
+                                'Answer primarily in Korean, briefly and clearly.\n\n' + prompt
+                            )
+                        }
+                    ]
+                }
+            ],
+            'generationConfig': {
+                'temperature': 0.5,
+            },
+        }
+
+        req = request.Request(
+            f"{settings.gemini_base_url.rstrip('/')}/models/{settings.gemini_model}:generateContent?key={settings.gemini_api_key}",
+            data=json.dumps(payload).encode('utf-8'),
+            headers={
+                'Content-Type': 'application/json',
+            },
+            method='POST',
+        )
+
+        try:
+            with request.urlopen(req, timeout=30) as response:
+                data = json.loads(response.read().decode('utf-8'))
+                return data['candidates'][0]['content']['parts'][0]['text'].strip()
         except (error.HTTPError, error.URLError, KeyError, IndexError, TimeoutError, json.JSONDecodeError):
             return None
 
