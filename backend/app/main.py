@@ -7,9 +7,9 @@ from app.api.routes.chat import router as chat_router
 from app.api.routes.events import router as events_router
 from app.api.routes.users import router as users_router
 from app.core.config import settings
+from app.core.paths import UPLOADS_DIR, ensure_upload_dirs, migrate_legacy_uploads
 from app.db.session import SessionLocal, init_db
 from app.services.bootstrap_service import BootstrapService
-from pathlib import Path
 
 app = FastAPI(
     title=settings.app_name,
@@ -28,9 +28,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-uploads_dir = Path(__file__).resolve().parents[2] / "uploads"
-uploads_dir.mkdir(parents=True, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
+ensure_upload_dirs()
+app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 
 
 @app.on_event("startup")
