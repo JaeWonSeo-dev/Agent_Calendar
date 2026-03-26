@@ -16,8 +16,8 @@ from app.services.auth_service import AuthService
 router = APIRouter()
 auth_service = AuthService()
 
-UPLOAD_DIR = Path(__file__).resolve().parents[3] / "uploads" / "profiles"
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+ensure_upload_dirs()
+UPLOAD_DIR = PROFILE_UPLOADS_DIR
 
 
 @router.post("/signup", response_model=UserRead)
@@ -59,7 +59,12 @@ def signup(payload: UserSignup, session: Session = Depends(get_db_session)) -> U
 
 @router.post("/login", response_model=UserRead)
 def login(payload: LoginRequest, session: Session = Depends(get_db_session)) -> User:
-    user = session.exec(select(User).where(User.email == payload.email)).first()
+    identifier = payload.identifier.strip()
+    user = session.exec(
+        select(User).where(
+            (User.email == identifier) | (User.username == identifier)
+        )
+    ).first()
     if not user or user.password_hash != auth_service.hash_password(payload.password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     return user

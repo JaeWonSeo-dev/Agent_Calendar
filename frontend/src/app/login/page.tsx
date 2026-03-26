@@ -13,7 +13,7 @@ import { saveUser } from '../../lib/local-store';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
@@ -22,7 +22,7 @@ export default function LoginPage() {
     try {
       setLoading(true);
       setStatus('로그인 중...');
-      const user = await login({ email, password });
+      const user = await login({ identifier, password });
       saveUser(user);
       setStatus('로그인 완료');
       router.push(user.onboarding_completed ? '/workspace' : '/onboarding');
@@ -43,8 +43,8 @@ export default function LoginPage() {
             <p style={{ color: '#6b7280' }}>이미 계정이 있으면 여기서 들어오면 된다냥.</p>
 
             <form style={{ display: 'grid', gap: 16, marginTop: 24 }} onSubmit={(e) => e.preventDefault()}>
-              <Field label="이메일">
-                <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="email@example.com" style={{ width: '100%', padding: 10 }} />
+              <Field label="이메일 또는 아이디">
+                <input value={identifier} onChange={(e) => setIdentifier(e.target.value)} type="text" placeholder="email@example.com 또는 username" style={{ width: '100%', padding: 10 }} />
               </Field>
 
               <Field label="비밀번호">

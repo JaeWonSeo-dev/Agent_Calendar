@@ -78,7 +78,7 @@ export async function signup(payload: { email: string; username: string; passwor
   });
 }
 
-export async function login(payload: { email: string; password: string }) {
+export async function login(payload: { identifier: string; password: string }) {
   return request<UserRead>('/api/users/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
