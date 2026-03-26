@@ -6,6 +6,7 @@ from sqlmodel import Session, select
 
 from app.api.deps import get_db_session
 from app.models.chat import ChatMessage, ChatSession
+from app.models.event import Event
 from app.schemas.chat import ChatMessageCreate, ChatMessageRead, ChatSessionCreate, ChatSessionRead
 from app.services.calendar_service import CalendarService
 from app.services.chat_service import ChatService
@@ -82,8 +83,8 @@ def ask_chatbot(session_id: UUID, body: dict, session: Session = Depends(get_db_
     session.add(user_message)
 
     default_calendar = calendar_service.get_default_calendar(session)
-    now = datetime.now(timezone.utc)
-    end_window = now + timedelta(days=7)
+    now = datetime.now(timezone.utc) - timedelta(days=7)
+    end_window = datetime.now(timezone.utc) + timedelta(days=30)
     events = calendar_service.list_events_in_range(
         session=session,
         calendar_id=default_calendar.id if default_calendar else None,

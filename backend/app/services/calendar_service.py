@@ -26,12 +26,25 @@ class CalendarService:
             statement = statement.where(Event.calendar_id == calendar_id)
         if user_id:
             statement = statement.where(Event.owner_user_id == user_id)
-        if start_at:
-            statement = statement.where(Event.start_at >= start_at)
-        if end_at:
-            statement = statement.where(Event.end_at <= end_at)
         statement = statement.order_by(Event.start_at.asc())
-        return list(session.exec(statement).all())
+        events = list(session.exec(statement).all())
+
+        if not start_at and not end_at:
+            return events
+
+        normalized_start = start_at.replace(tzinfo=None) if start_at and start_at.tzinfo else start_at
+        normalized_end = end_at.replace(tzinfo=None) if end_at and end_at.tzinfo else end_at
+
+        filtered: list[Event] = []
+        for event in events:
+            event_start = event.start_at.replace(tzinfo=None) if event.start_at.tzinfo else event.start_at
+            event_end = event.end_at.replace(tzinfo=None) if event.end_at.tzinfo else event.end_at
+            if normalized_start and event_end < normalized_start:
+                continue
+            if normalized_end and event_start > normalized_end:
+                continue
+            filtered.append(event)
+        return filtered
 
     def serialize_events(self, events: list[Event]) -> list[dict[str, Any]]:
         return [
