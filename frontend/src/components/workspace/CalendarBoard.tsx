@@ -1,8 +1,12 @@
 'use client';
 
-import FullCalendar from '@fullcalendar/react';
+import dynamic from 'next/dynamic';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
+
+const FullCalendar = dynamic(() => import('@fullcalendar/react'), {
+  ssr: false,
+});
 
 type EventItem = {
   id: string;
@@ -71,7 +75,7 @@ export default function CalendarBoard({ events, selectedDate, onSelectDate }: Pr
           }}
           select={(info) => {
             document.querySelectorAll('.selected-calendar-cell').forEach((node) => node.classList.remove('selected-calendar-cell'));
-            const cells = document.querySelectorAll(`[data-date]`);
+            const cells = document.querySelectorAll('[data-date]');
             cells.forEach((cell) => {
               const date = cell.getAttribute('data-date');
               if (!date) return;
