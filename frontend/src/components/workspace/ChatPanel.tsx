@@ -23,6 +23,7 @@ export default function ChatPanel({ chatLines, chatInput, onChatInputChange, onS
         maxHeight: 'calc(100vh - 73px)',
         position: 'sticky',
         top: 73,
+        overflow: 'hidden',
       }}
     >
       <h2 style={{ marginTop: 0 }}>LLM Chatbot</h2>
@@ -40,7 +41,7 @@ export default function ChatPanel({ chatLines, chatInput, onChatInputChange, onS
         ))}
       </div>
 
-      <div style={{ position: 'sticky', bottom: 0, display: 'flex', gap: 8, marginTop: 16, paddingTop: 12, background: 'linear-gradient(180deg, rgba(252,252,255,0), #f8fafc 28%)' }}>
+      <div style={{ flexShrink: 0, display: 'flex', gap: 8, marginTop: 16, paddingTop: 12, paddingBottom: 4, background: 'linear-gradient(180deg, rgba(252,252,255,0), #f8fafc 28%)' }}>
         <input value={chatInput} onChange={(e) => onChatInputChange(e.target.value)} type="text" placeholder="공유 캘린더에 대해 물어보기" style={{ flex: 1, padding: 12, borderRadius: 14, border: '1px solid #dbe2ea', background: '#fff' }} />
         <button onClick={onSend} type="button" style={{ padding: '10px 14px', borderRadius: 12, border: '1px solid #111827', background: '#111827', color: '#fff' }}>전송</button>
       </div>

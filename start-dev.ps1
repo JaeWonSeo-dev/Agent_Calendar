@@ -28,7 +28,7 @@ Write-Host 'Starting backend server...' -ForegroundColor Green
 Start-Process powershell -ArgumentList @(
     '-NoExit',
     '-Command',
-    "Set-Location '$backendPath'; & '$venvActivate'; uvicorn app.main:app --reload"
+    "Set-Location '$backendPath'; & '$venvActivate'; uvicorn app.main:app"
 )
 
 Write-Host 'Starting frontend server...' -ForegroundColor Green

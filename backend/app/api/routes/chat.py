@@ -124,4 +124,12 @@ def ask_chatbot(session_id: UUID, body: dict, session: Session = Depends(get_db_
         'assistant_message': assistant_message.content,
         'context_count': len(context),
         'event_count': len(serialized_events),
+        'provider': llm_result.get('provider'),
+        'debug': {
+            'default_calendar_id': str(default_calendar.id) if default_calendar else None,
+            'default_calendar_name': default_calendar.name if default_calendar else None,
+            'raw_event_count': len(events),
+            'serialized_event_count': len(serialized_events),
+            'event_titles': debug_event_titles,
+        },
     }
