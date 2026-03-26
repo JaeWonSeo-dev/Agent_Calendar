@@ -66,6 +66,7 @@ export default function ThemesPage() {
                   >
                     <div style={{ fontSize: 22, fontWeight: 700 }}>{option.name}</div>
                     <div style={{ marginTop: 10, fontSize: 28, lineHeight: 1.4 }}>{option.preview}</div>
+                    <div style={{ marginTop: 8, color: '#64748b', fontSize: 14 }}>{option.description}</div>
                   </button>
                 ))}
               </div>

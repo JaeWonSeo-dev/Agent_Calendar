@@ -12,6 +12,7 @@ export default function HomePage() {
         minHeight: '100vh',
         background: 'linear-gradient(135deg, #f5f7ff 0%, #eefaf4 100%)',
         color: '#111827',
+        fontFamily: 'var(--app-font-family)',
       }}
     >
       <PageContainer maxWidth={1100}>
@@ -24,7 +25,7 @@ export default function HomePage() {
             minHeight: '100vh',
           }}
         >
-          <div>
+          <div style={{ fontFamily: 'var(--app-font-family)' }}>
             <div
               style={{
                 display: 'inline-block',
@@ -38,12 +39,12 @@ export default function HomePage() {
             >
               Shared Calendar + LLM Chatbot
             </div>
-            <h1 style={{ fontSize: 52, lineHeight: 1.1, margin: 0 }}>
+            <h1 style={{ fontSize: 52, lineHeight: 1.1, margin: 0, fontFamily: 'var(--app-font-family)', fontWeight: 700 }}>
               같이 쓰는 캘린더를
               <br />
               더 똑똑하게 관리하자냥
             </h1>
-            <p style={{ fontSize: 18, lineHeight: 1.7, color: '#4b5563', marginTop: 20 }}>
+            <p style={{ fontSize: 18, lineHeight: 1.7, color: '#4b5563', marginTop: 20, fontFamily: 'var(--app-font-family)' }}>
               모든 사용자가 같은 캘린더를 공유하고, 오른쪽 챗봇 패널에서
               자연어로 일정 질문까지 할 수 있는 협업형 캘린더 서비스다냥.
             </p>
@@ -60,6 +61,7 @@ export default function HomePage() {
                     border: '1px solid #c7d2fe',
                     background: '#fff',
                     cursor: 'pointer',
+                    fontFamily: 'var(--app-font-family)',
                   }}
                 >
                   로그인
@@ -80,6 +82,7 @@ export default function HomePage() {
                     border: '1px solid #e5e7eb',
                     borderRadius: 16,
                     padding: 16,
+                    fontFamily: 'var(--app-font-family)',
                   }}
                 >
                   <strong>{title}</strong>
@@ -96,6 +99,7 @@ export default function HomePage() {
               borderRadius: 24,
               padding: 24,
               boxShadow: '0 20px 60px rgba(0,0,0,0.08)',
+              fontFamily: 'var(--app-font-family)',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
@@ -113,6 +117,7 @@ export default function HomePage() {
                     padding: 8,
                     border: '1px solid #eef2f7',
                     fontSize: 13,
+                    fontFamily: 'var(--app-font-family)',
                   }}
                 >
                   <div style={{ fontWeight: 600 }}>{day <= 31 ? day : ''}</div>
