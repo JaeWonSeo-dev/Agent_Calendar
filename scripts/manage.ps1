@@ -16,12 +16,34 @@ function Ensure-BackendVenv {
     }
 }
 
+function Stop-AgentCalendarProcesses {
+    $procs = Get-CimInstance Win32_Process | Where-Object {
+        $cmd = $_.CommandLine
+        if (-not $cmd) { return $false }
+
+        return (
+            $cmd -match 'C:\\Sjw_dev\\Coding\\Agent_Calendar\\backend.*uvicorn' -or
+            $cmd -match 'C:\\Sjw_dev\\Coding\\Agent_Calendar\\frontend\\node_modules\\.*next\\dist\\bin\\next" start' -or
+            $cmd -match 'C:\\Sjw_dev\\Coding\\Agent_Calendar\\frontend\\node_modules\\.*next\\dist\\bin\\next" dev'
+        )
+    } | Sort-Object ProcessId -Unique
+
+    foreach ($proc in $procs) {
+        try {
+            Stop-Process -Id $proc.ProcessId -Force -ErrorAction Stop
+            Write-Host ("Stopped PID {0}: {1}" -f $proc.ProcessId, $proc.Name) -ForegroundColor DarkYellow
+        } catch {
+            Write-Host ("Skip PID {0}: {1}" -f $proc.ProcessId, $_.Exception.Message) -ForegroundColor DarkGray
+        }
+    }
+}
+
 switch ($Command) {
     'backend' {
         Ensure-BackendVenv
         Set-Location $backendPath
         & $venvActivate
-        uvicorn app.main:app
+        uvicorn app.main:app --host 127.0.0.1 --port 8000
         break
     }
     'frontend' {
@@ -36,6 +58,10 @@ switch ($Command) {
         npm run dev
         break
     }
+    'stop' {
+        Stop-AgentCalendarProcesses
+        break
+    }
     'dev' {
         Write-Host 'Use npm start from the project root for same-terminal startup.' -ForegroundColor Yellow
         break
@@ -43,11 +69,13 @@ switch ($Command) {
     'help' {
         Write-Host 'Usage:' -ForegroundColor Cyan
         Write-Host '  npm start' -ForegroundColor White
+        Write-Host '  npm run stop' -ForegroundColor White
         Write-Host '  npm run backend' -ForegroundColor White
         Write-Host '  npm run frontend' -ForegroundColor White
         Write-Host '  powershell -ExecutionPolicy Bypass -File .\scripts\manage.ps1 backend' -ForegroundColor White
         Write-Host '  powershell -ExecutionPolicy Bypass -File .\scripts\manage.ps1 frontend' -ForegroundColor White
         Write-Host '  powershell -ExecutionPolicy Bypass -File .\scripts\manage.ps1 frontend-dev' -ForegroundColor White
+        Write-Host '  powershell -ExecutionPolicy Bypass -File .\scripts\manage.ps1 stop' -ForegroundColor White
         break
     }
     default {
