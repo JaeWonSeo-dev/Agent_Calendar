@@ -91,6 +91,8 @@ export default function ProfilePage() {
     }
   };
 
+  const profileTitle = nickname || displayName || '프로필 이름';
+
   return (
     <div style={{ minHeight: '100vh', background: 'radial-gradient(circle at top left, rgba(99,102,241,0.18), transparent 28%), radial-gradient(circle at top right, rgba(16,185,129,0.18), transparent 24%), linear-gradient(135deg, #f7f9ff 0%, #f4fbff 45%, #f7fff9 100%)' }}>
       <GlobalMenuBar
@@ -119,7 +121,6 @@ export default function ProfilePage() {
                 boxShadow: '0 24px 60px rgba(99, 102, 241, 0.08)',
                 display: 'flex',
                 flexDirection: 'column',
-                justifyContent: 'space-between',
               }}
             >
               <div>
@@ -127,31 +128,25 @@ export default function ProfilePage() {
                   PROFILE STUDIO
                 </div>
                 <h1 style={{ margin: '18px 0 10px', fontSize: 38, lineHeight: 1.1 }}>프로필 관리</h1>
-                <p style={{ margin: 0, color: '#64748b', lineHeight: 1.7 }}>
-                  프로필 사진, 닉네임, 생일, 일정 색상을 깔끔하게 정리하는 공간이다냥.
-                </p>
               </div>
 
-              <div style={{ marginTop: 28, padding: 18, borderRadius: 22, background: 'linear-gradient(135deg, rgba(99,102,241,0.12), rgba(16,185,129,0.10))', border: '1px solid rgba(99,102,241,0.10)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <div style={{ width: 112, height: 112, borderRadius: 999, overflow: 'hidden', border: `4px solid ${preferredEventColor}`, background: 'linear-gradient(135deg, #ffffff, #eef2ff)', boxShadow: '0 16px 30px rgba(79,70,229,0.16)', flexShrink: 0 }}>
+              <div style={{ marginTop: 28, padding: 22, borderRadius: 22, background: 'linear-gradient(135deg, rgba(99,102,241,0.12), rgba(16,185,129,0.10))', border: '1px solid rgba(99,102,241,0.10)' }}>
+                <div style={{ display: 'grid', justifyItems: 'center', textAlign: 'center', gap: 16 }}>
+                  <div style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>{profileTitle}</div>
+
+                  <div style={{ width: 132, height: 132, borderRadius: 999, overflow: 'hidden', border: `4px solid ${preferredEventColor}`, background: 'linear-gradient(135deg, #ffffff, #eef2ff)', boxShadow: '0 16px 30px rgba(79,70,229,0.16)', flexShrink: 0 }}>
                     {previewImageUrl ? (
                       <img src={previewImageUrl} alt="profile" onError={() => setImageFailed(true)} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                     ) : (
-                      <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', fontWeight: 800, fontSize: 34, color: '#4f46e5' }}>
+                      <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', fontWeight: 800, fontSize: 38, color: '#4f46e5' }}>
                         {((nickname || displayName || '?').slice(0, 1) || '?').toUpperCase()}
                       </div>
                     )}
                   </div>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 22, fontWeight: 800, color: '#0f172a' }}>{nickname || displayName || '프로필 이름'}</div>
-                    <div style={{ marginTop: 6, color: '#64748b', lineHeight: 1.6 }}>
-                      이미지가 안 보이면 자동으로 이니셜 아바타로 표시된다냥.
-                    </div>
-                    <div style={{ marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 999, background: '#fff', color: '#334155', border: '1px solid rgba(148,163,184,0.24)' }}>
-                      <span style={{ width: 12, height: 12, borderRadius: 999, background: preferredEventColor, display: 'inline-block' }} />
-                      일정 대표 색상
-                    </div>
+
+                  <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '10px 16px', borderRadius: 999, background: '#fff', color: '#334155', border: '1px solid rgba(148,163,184,0.24)', minWidth: 170 }}>
+                    <span style={{ width: 14, height: 14, borderRadius: 999, background: preferredEventColor, display: 'inline-block', flexShrink: 0 }} />
+                    <span style={{ fontWeight: 700 }}>일정 대표 색상</span>
                   </div>
                 </div>
               </div>
