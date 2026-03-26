@@ -62,6 +62,7 @@ export default function CalendarBoard({ events, selectedDate, onSelectDate }: Pr
           selectable={true}
           selectMirror={true}
           unselectAuto={false}
+          displayEventTime={false}
           events={calendarEvents}
           dateClick={(info) => {
             document.querySelectorAll('.selected-calendar-cell').forEach((node) => node.classList.remove('selected-calendar-cell'));

@@ -34,6 +34,7 @@ export type UserSummary = {
   id: string;
   display_name: string;
   nickname?: string | null;
+  birth_date?: string | null;
   preferred_event_color?: string | null;
   profile_image_url?: string | null;
 };

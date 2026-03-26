@@ -44,5 +44,6 @@ class UserSummary(BaseModel):
     id: UUID
     display_name: str
     nickname: Optional[str] = None
+    birth_date: Optional[date] = None
     preferred_event_color: Optional[str] = None
     profile_image_url: Optional[str] = None
