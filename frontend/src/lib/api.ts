@@ -195,8 +195,24 @@ export async function listChatMessages(sessionId: string) {
   return request<ChatMessageRead[]>(`/api/chat/sessions/${sessionId}/messages`);
 }
 
+export type ChatAskResponse = {
+  session_id: string;
+  user_message: string;
+  assistant_message: string;
+  context_count: number;
+  event_count: number;
+  provider?: string | null;
+  debug?: {
+    default_calendar_id?: string | null;
+    default_calendar_name?: string | null;
+    raw_event_count?: number;
+    serialized_event_count?: number;
+    event_titles?: string[];
+  };
+};
+
 export async function askChatbot(sessionId: string, message: string) {
-  return request<{ session_id: string; user_message: string; assistant_message: string; context_count: number; event_count: number }>(`/api/chat/sessions/${sessionId}/ask`, {
+  return request<ChatAskResponse>(`/api/chat/sessions/${sessionId}/ask`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ message }),
