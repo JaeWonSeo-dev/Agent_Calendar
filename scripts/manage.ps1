@@ -23,6 +23,7 @@ function Stop-AgentCalendarProcesses {
 
         return (
             $cmd -match 'C:\\Sjw_dev\\Coding\\Agent_Calendar\\backend.*uvicorn' -or
+            $cmd -match 'C:\\Sjw_dev\\Coding\\Agent_Calendar\\backend.*discord_bot\.py' -or
             $cmd -match 'C:\\Sjw_dev\\Coding\\Agent_Calendar\\frontend\\node_modules\\.*next\\dist\\bin\\next" start' -or
             $cmd -match 'C:\\Sjw_dev\\Coding\\Agent_Calendar\\frontend\\node_modules\\.*next\\dist\\bin\\next" dev'
         )
@@ -58,6 +59,13 @@ switch ($Command) {
         npm run dev
         break
     }
+    'discord-bot' {
+        Ensure-BackendVenv
+        Set-Location $backendPath
+        & $venvActivate
+        & $venvPython discord_bot.py
+        break
+    }
     'stop' {
         Stop-AgentCalendarProcesses
         break
@@ -72,9 +80,11 @@ switch ($Command) {
         Write-Host '  npm run stop' -ForegroundColor White
         Write-Host '  npm run backend' -ForegroundColor White
         Write-Host '  npm run frontend' -ForegroundColor White
+        Write-Host '  npm run discord-bot' -ForegroundColor White
         Write-Host '  powershell -ExecutionPolicy Bypass -File .\scripts\manage.ps1 backend' -ForegroundColor White
         Write-Host '  powershell -ExecutionPolicy Bypass -File .\scripts\manage.ps1 frontend' -ForegroundColor White
         Write-Host '  powershell -ExecutionPolicy Bypass -File .\scripts\manage.ps1 frontend-dev' -ForegroundColor White
+        Write-Host '  powershell -ExecutionPolicy Bypass -File .\scripts\manage.ps1 discord-bot' -ForegroundColor White
         Write-Host '  powershell -ExecutionPolicy Bypass -File .\scripts\manage.ps1 stop' -ForegroundColor White
         break
     }
