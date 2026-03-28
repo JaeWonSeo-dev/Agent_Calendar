@@ -150,14 +150,22 @@ def ask_chatbot(session_id: UUID, body: dict, session: Session = Depends(get_db_
     serialized_events = calendar_service.serialize_events(events)
     debug_event_titles = [event.title for event in events[:10]]
 
-    llm_result = llm_service.answer_schedule_question(
-        user_id=str(chat_session.user_id),
-        message=user_message_text,
-        context=context,
-        events=serialized_events,
-        user_nickname=user_nickname,
-        agent_name=agent_name,
-    )
+    action_plan = discord_agent_service.build_plan(user_message_text)
+    if action_plan.intent in {'create_event', 'update_event', 'delete_event'}:
+        action_message = discord_agent_service.execute_plan(session, plan=action_plan, user=user) if user else '사용자 정보를 찾지 못해 작업을 실행할 수 없어요.'
+        llm_result = {
+            'message': action_message,
+            'provider': 'agent-action',
+        }
+    else:
+        llm_result = llm_service.answer_schedule_question(
+            user_id=str(chat_session.user_id),
+            message=user_message_text,
+            context=context,
+            events=serialized_events,
+            user_nickname=user_nickname,
+            agent_name=agent_name,
+        )
 
     assistant_message = ChatMessage(
         session_id=chat_session.id,

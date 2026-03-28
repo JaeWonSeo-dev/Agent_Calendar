@@ -64,6 +64,22 @@ function parseTimeTo24Hour(timeText: string, meridiem: 'AM' | 'PM') {
   return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
 }
 
+function formatLocalDateInput(value: string) {
+  const match = String(value).match(/^(\d{4}-\d{2}-\d{2})/);
+  return match ? match[1] : '';
+}
+
+function parseLocalDateTime(value: string) {
+  const [datePart, timePart = '00:00:00'] = String(value).split('T');
+  const [year, month, day] = datePart.split('-').map(Number);
+  const [hour, minute] = timePart.split(':').map(Number);
+  return new Date(year, (month || 1) - 1, day || 1, hour || 0, minute || 0);
+}
+
+function toNaiveDateTimeString(dateText: string, time24: string) {
+  return `${dateText}T${time24}:00`;
+}
+
 export default function WorkspacePage() {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
@@ -233,8 +249,8 @@ export default function WorkspacePage() {
         await updateEvent(editingEventId, {
           title,
           description,
-          start_at: new Date(`${startDate}T${start24}`).toISOString(),
-          end_at: new Date(`${endDate}T${end24}`).toISOString(),
+          start_at: toNaiveDateTimeString(startDate, start24),
+          end_at: toNaiveDateTimeString(endDate, end24),
         });
       } else {
         await createEvent({
@@ -242,8 +258,8 @@ export default function WorkspacePage() {
           owner_user_id: userId,
           title,
           description,
-          start_at: new Date(`${startDate}T${start24}`).toISOString(),
-          end_at: new Date(`${endDate}T${end24}`).toISOString(),
+          start_at: toNaiveDateTimeString(startDate, start24),
+          end_at: toNaiveDateTimeString(endDate, end24),
           all_day: false,
           status: 'scheduled',
         });
@@ -257,15 +273,15 @@ export default function WorkspacePage() {
   };
 
   const handleEdit = (event: EventItem) => {
-    const start = new Date(event.start_at);
-    const end = new Date(event.end_at);
+    const start = parseLocalDateTime(event.start_at);
+    const end = parseLocalDateTime(event.end_at);
     const startHour24 = start.getHours();
     const endHour24 = end.getHours();
     setEditingEventId(event.id);
     setTitle(event.title);
     setDescription(event.description ?? '');
-    setStartDate(event.start_at.slice(0, 10));
-    setEndDate(event.end_at.slice(0, 10));
+    setStartDate(formatLocalDateInput(event.start_at));
+    setEndDate(formatLocalDateInput(event.end_at));
     setStartMeridiem(startHour24 >= 12 ? 'PM' : 'AM');
     setEndMeridiem(endHour24 >= 12 ? 'PM' : 'AM');
     setStartTime(`${String(((startHour24 + 11) % 12) + 1).padStart(2, '0')}:${String(start.getMinutes()).padStart(2, '0')}`);
