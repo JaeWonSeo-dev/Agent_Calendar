@@ -17,6 +17,7 @@ class UserOnboardingUpdate(BaseModel):
     birth_date: Optional[date] = None
     profile_image_url: Optional[str] = None
     preferred_event_color: str
+    agent_display_name: Optional[str] = 'AGENT'
 
 
 class UserProfileUpdate(BaseModel):
@@ -25,6 +26,12 @@ class UserProfileUpdate(BaseModel):
     birth_date: Optional[date] = None
     profile_image_url: Optional[str] = None
     preferred_event_color: Optional[str] = None
+    agent_display_name: Optional[str] = None
+
+
+class DiscordLinkRequest(BaseModel):
+    discord_user_id: str
+    discord_username: Optional[str] = None
 
 
 class UserRead(BaseModel):
@@ -37,6 +44,9 @@ class UserRead(BaseModel):
     timezone: str
     profile_image_url: Optional[str] = None
     preferred_event_color: Optional[str] = None
+    agent_display_name: Optional[str] = None
+    discord_user_id: Optional[str] = None
+    discord_username: Optional[str] = None
     onboarding_completed: bool
 
 
@@ -47,3 +57,6 @@ class UserSummary(BaseModel):
     birth_date: Optional[date] = None
     preferred_event_color: Optional[str] = None
     profile_image_url: Optional[str] = None
+    agent_display_name: Optional[str] = None
+    discord_user_id: Optional[str] = None
+    discord_username: Optional[str] = None

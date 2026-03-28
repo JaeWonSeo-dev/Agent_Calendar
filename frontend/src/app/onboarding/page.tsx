@@ -18,12 +18,13 @@ export default function OnboardingPage() {
   const [nickname, setNickname] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [birthDate, setBirthDate] = useState('');
+  const [agentDisplayName, setAgentDisplayName] = useState('AGENT');
   const [preferredEventColor, setPreferredEventColor] = useState('#4f46e5');
   const [status, setStatus] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    const user = loadUser<{ id: string; username?: string; display_name?: string; profile_image_url?: string }>();
+    const user = loadUser<{ id: string; username?: string; display_name?: string; profile_image_url?: string; agent_display_name?: string }>();
     if (!user?.id) {
       router.push('/login');
       return;
@@ -31,6 +32,7 @@ export default function OnboardingPage() {
     setUserId(user.id);
     setDisplayName(user.display_name ?? user.username ?? '');
     setNickname(user.username ?? '');
+    setAgentDisplayName(user.agent_display_name ?? 'AGENT');
     if (user.profile_image_url) setPreviewUrl(absoluteAssetUrl(user.profile_image_url));
   }, [router]);
 
@@ -53,6 +55,7 @@ export default function OnboardingPage() {
         display_name: displayName,
         nickname,
         birth_date: birthDate || undefined,
+        agent_display_name: agentDisplayName.trim() || 'AGENT',
         profile_image_url: uploadedProfileImageUrl,
         preferred_event_color: preferredEventColor,
       });
@@ -101,6 +104,10 @@ export default function OnboardingPage() {
 
               <Field label="생일">
                 <input value={birthDate} onChange={(e) => setBirthDate(e.target.value)} type="date" style={{ width: '100%', padding: 10 }} />
+              </Field>
+
+              <Field label="LLM 챗봇 이름">
+                <input value={agentDisplayName} onChange={(e) => setAgentDisplayName(e.target.value)} type="text" placeholder="예: 모찌, 루루, 캘냥이" style={{ width: '100%', padding: 10 }} />
               </Field>
 
               <Field label="일정 색상">

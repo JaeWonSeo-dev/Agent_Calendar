@@ -23,7 +23,7 @@ import {
   listUsers,
   updateEvent,
 } from '../../lib/api';
-import { loadChatSession, loadUser, saveChatSession } from '../../lib/local-store';
+import { loadChatSession, loadUser, saveChatSession, saveUser } from '../../lib/local-store';
 
 type EventItem = {
   id: string;
@@ -48,6 +48,7 @@ type UserSummary = {
   preferred_event_color?: string | null;
   profile_image_url?: string | null;
   birth_date?: string | null;
+  agent_display_name?: string | null;
 };
 
 function parseTimeTo24Hour(timeText: string, meridiem: 'AM' | 'PM') {
@@ -85,6 +86,8 @@ export default function WorkspacePage() {
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedUser, setSelectedUser] = useState<UserSummary | null>(null);
+  const [myNickname, setMyNickname] = useState('USER');
+  const [agentName, setAgentName] = useState('AGENT');
 
   const refreshUsers = async () => {
     const userList = await listUsers();
@@ -119,16 +122,30 @@ export default function WorkspacePage() {
   };
 
   useEffect(() => {
-    const user = loadUser<{ id: string; onboarding_completed?: boolean }>();
-    if (!user?.id) {
-      router.push('/login');
-      return;
-    }
-    if (!user.onboarding_completed) {
-      router.push('/onboarding');
-      return;
-    }
-    setUserId(user.id);
+    const applyUser = (user: { id: string; onboarding_completed?: boolean; nickname?: string; display_name?: string; agent_display_name?: string } | null) => {
+      if (!user?.id) {
+        router.push('/login');
+        return;
+      }
+      if (!user.onboarding_completed) {
+        router.push('/onboarding');
+        return;
+      }
+      setUserId(user.id);
+      setMyNickname(user.nickname || user.display_name || 'USER');
+      setAgentName(user.agent_display_name || 'AGENT');
+    };
+
+    const initialUser = loadUser<{ id: string; onboarding_completed?: boolean; nickname?: string; display_name?: string; agent_display_name?: string }>();
+    applyUser(initialUser);
+
+    const handleUserUpdated = (event: Event) => {
+      const customEvent = event as CustomEvent<{ id: string; onboarding_completed?: boolean; nickname?: string; display_name?: string; agent_display_name?: string }>;
+      applyUser(customEvent.detail ?? loadUser());
+    };
+
+    window.addEventListener('agent-calendar-user-updated', handleUserUpdated as EventListener);
+    return () => window.removeEventListener('agent-calendar-user-updated', handleUserUpdated as EventListener);
   }, [router]);
 
   useEffect(() => {
@@ -138,6 +155,14 @@ export default function WorkspacePage() {
         setStatus('공유 캘린더 불러오는 중...');
         await bootstrapDefaultCalendar();
         const mapped = await refreshUsers();
+        const me = mapped[userId];
+        if (me) {
+          const nextNickname = me.nickname || me.display_name || 'USER';
+          const nextAgentName = me.agent_display_name || 'AGENT';
+          setMyNickname(nextNickname);
+          setAgentName(nextAgentName);
+          saveUser({ ...loadUser<any>(), ...me, nickname: nextNickname, agent_display_name: nextAgentName });
+        }
         const calendar = await getDefaultCalendar();
         setCalendarId(calendar.id);
         setCalendarName(calendar.name);
@@ -279,7 +304,7 @@ export default function WorkspacePage() {
   };
 
   return (
-    <main style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f7f9ff 0%, #f3fbf7 100%)', color: '#111827' }}>
+    <main style={{ minHeight: '100vh', background: 'radial-gradient(circle at top left, rgba(99,102,241,0.18), transparent 22%), radial-gradient(circle at top right, rgba(16,185,129,0.16), transparent 18%), linear-gradient(135deg, #f7f9ff 0%, #f3fbf7 100%)', color: '#111827' }}>
       <GlobalMenuBar
         title={calendarName}
         active="calendar"
@@ -288,10 +313,10 @@ export default function WorkspacePage() {
         onOpenThemes={() => window.location.href = '/themes'}
       />
 
-      <div style={{ display: 'flex', minHeight: 'calc(100vh - 73px)' }}>
-        <section style={{ width: '70%', borderRight: '1px solid #e5e7eb', padding: 24 }}>
+      <div style={{ display: 'flex', minHeight: 'calc(100vh - 88px)' }}>
+        <section style={{ width: '70%', padding: 28 }}>
           <TopNavBar users={Object.values(users)} onSelectUser={setSelectedUser} />
-          {status ? <p style={{ marginTop: 12, color: '#374151' }}>{status}</p> : null}
+          {status ? <p style={{ marginTop: 14, color: '#374151', fontSize: 15 }}>{status}</p> : null}
 
           <CalendarBoard events={events} selectedDate={selectedDate} onSelectDate={handleSelectDate} />
 
@@ -325,6 +350,8 @@ export default function WorkspacePage() {
           chatInput={chatInput}
           onChatInputChange={setChatInput}
           onSend={handleAsk}
+          agentName={agentName}
+          userNickname={myNickname}
         />
       </div>
 

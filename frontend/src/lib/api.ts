@@ -27,6 +27,7 @@ export type UserRead = {
   timezone: string;
   profile_image_url?: string | null;
   preferred_event_color?: string | null;
+  agent_display_name?: string | null;
   onboarding_completed: boolean;
 };
 
@@ -37,6 +38,7 @@ export type UserSummary = {
   birth_date?: string | null;
   preferred_event_color?: string | null;
   profile_image_url?: string | null;
+  agent_display_name?: string | null;
 };
 
 export type ChatSessionRead = {
@@ -101,6 +103,7 @@ export async function completeOnboarding(userId: string, payload: {
   birth_date?: string;
   profile_image_url?: string;
   preferred_event_color: string;
+  agent_display_name?: string;
 }) {
   return request<UserRead>(`/api/users/${userId}/onboarding`, {
     method: 'PATCH',
@@ -115,6 +118,7 @@ export async function updateProfile(userId: string, payload: {
   birth_date?: string;
   profile_image_url?: string;
   preferred_event_color?: string;
+  agent_display_name?: string;
 }) {
   return request<UserRead>(`/api/users/${userId}/profile`, {
     method: 'PATCH',
@@ -208,6 +212,8 @@ export type ChatAskResponse = {
     raw_event_count?: number;
     serialized_event_count?: number;
     event_titles?: string[];
+    agent_name?: string | null;
+    user_nickname?: string | null;
   };
 };
 

@@ -4,6 +4,7 @@ const CHAT_SESSION_KEY = 'agent-calendar-chat-session';
 export function saveUser(user: unknown) {
   if (typeof window === 'undefined') return;
   localStorage.setItem(USER_KEY, JSON.stringify(user));
+  window.dispatchEvent(new CustomEvent('agent-calendar-user-updated', { detail: user }));
 }
 
 export function loadUser<T>() {

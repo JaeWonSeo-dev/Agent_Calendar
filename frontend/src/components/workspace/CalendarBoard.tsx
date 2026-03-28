@@ -98,21 +98,29 @@ export default function CalendarBoard({ events, selectedDate, onSelectDate }: Pr
     return weeks.map((weekDates) => {
       const weekStart = formatDateOnly(weekDates[0]);
       const weekEnd = formatDateOnly(weekDates[6]);
-      const eventRows: Array<Array<{ event: EventItem; startCol: number; endCol: number }>> = [];
+      const eventRows: Array<Array<{ id: string; title: string; color: string; startCol: number; endCol: number }>> = [];
 
       const relevantEvents = events
         .filter((event) => rangesOverlap(toDateOnlyText(event.start_at), toDateOnlyText(event.end_at), weekStart, weekEnd))
         .sort((a, b) => a.start_at.localeCompare(b.start_at) || a.title.localeCompare(b.title));
 
-      relevantEvents.forEach((event) => {
+      const segments = relevantEvents.flatMap((event) => {
         const eventStart = clampDate(toDateOnlyText(event.start_at), weekStart, weekEnd);
         const eventEnd = clampDate(toDateOnlyText(event.end_at), weekStart, weekEnd);
         const startCol = weekDates.findIndex((date) => formatDateOnly(date) === eventStart) + 1;
         const endCol = weekDates.findIndex((date) => formatDateOnly(date) === eventEnd) + 1;
-        if (!startCol || !endCol) return;
+        if (!startCol || !endCol) return [];
 
-        const segment = { event, startCol, endCol };
+        return [{
+          id: event.id,
+          title: event.title,
+          color: event.owner_color || '#6366f1',
+          startCol,
+          endCol,
+        }];
+      });
 
+      segments.forEach((segment) => {
         let placed = false;
         for (const row of eventRows) {
           const overlaps = row.some((item) => !(segment.endCol < item.startCol || segment.startCol > item.endCol));
@@ -146,6 +154,7 @@ export default function CalendarBoard({ events, selectedDate, onSelectDate }: Pr
         padding: 28,
         background: 'linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,250,255,0.92))',
         boxShadow: '0 24px 70px rgba(15, 23, 42, 0.08)',
+        zoom: 0.8,
       }}
       onMouseLeave={() => {
         if (isDragging && dragStart && dragCurrent) {
@@ -262,12 +271,12 @@ export default function CalendarBoard({ events, selectedDate, onSelectDate }: Pr
                 <div key={rowIndex} style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', columnGap: 4 }}>
                   {row.map((segment) => (
                     <div
-                      key={segment.event.id}
+                      key={segment.id}
                       style={{
                         gridColumn: `${segment.startCol} / ${segment.endCol + 1}`,
                         height: 30,
                         borderRadius: 10,
-                        background: segment.event.owner_color || '#6366f1',
+                        background: segment.color,
                         color: '#fff',
                         fontSize: 16,
                         fontWeight: 800,
@@ -277,9 +286,9 @@ export default function CalendarBoard({ events, selectedDate, onSelectDate }: Pr
                         whiteSpace: 'nowrap',
                         boxShadow: '0 10px 18px rgba(15,23,42,0.12)',
                       }}
-                      title={segment.event.title}
+                      title={segment.title}
                     >
-                      {segment.event.title}
+                      {segment.title}
                     </div>
                   ))}
                 </div>

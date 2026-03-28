@@ -10,7 +10,7 @@ from app.models.calendar import Calendar
 from app.models.calendar_member import CalendarMember, CalendarMemberRole
 from app.models.user import User
 from app.schemas.auth import LoginRequest
-from app.schemas.user import UserOnboardingUpdate, UserProfileUpdate, UserRead, UserSignup, UserSummary
+from app.schemas.user import DiscordLinkRequest, UserOnboardingUpdate, UserProfileUpdate, UserRead, UserSignup, UserSummary
 from app.services.auth_service import AuthService
 from app.services.profile_image_service import ProfileImageService
 
@@ -31,6 +31,7 @@ def signup(payload: UserSignup, session: Session = Depends(get_db_session)) -> U
         email=payload.email,
         username=payload.username,
         display_name=payload.username,
+        agent_display_name='AGENT',
         password_hash=auth_service.hash_password(payload.password),
     )
     session.add(user)
@@ -85,6 +86,32 @@ def list_users(session: Session = Depends(get_db_session)) -> list[User]:
     return [ProfileImageService.normalize_user_profile_image(user) for user in users]
 
 
+@router.get('/discord/{discord_user_id}', response_model=UserRead)
+def get_user_by_discord(discord_user_id: str, session: Session = Depends(get_db_session)) -> User:
+    user = session.exec(select(User).where(User.discord_user_id == discord_user_id)).first()
+    if not user:
+        raise HTTPException(status_code=404, detail='Linked user not found')
+    return ProfileImageService.normalize_user_profile_image(user)
+
+
+@router.post('/{user_id}/link-discord', response_model=UserRead)
+def link_discord_user(user_id: UUID, payload: DiscordLinkRequest, session: Session = Depends(get_db_session)) -> User:
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail='User not found')
+
+    existing = session.exec(select(User).where(User.discord_user_id == payload.discord_user_id, User.id != user_id)).first()
+    if existing:
+        raise HTTPException(status_code=400, detail='This Discord account is already linked to another user')
+
+    user.discord_user_id = payload.discord_user_id
+    user.discord_username = payload.discord_username
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    return ProfileImageService.normalize_user_profile_image(user)
+
+
 @router.patch('/{user_id}/onboarding', response_model=UserRead)
 def complete_onboarding(user_id: UUID, payload: UserOnboardingUpdate, session: Session = Depends(get_db_session)) -> User:
     user = session.get(User, user_id)
@@ -94,6 +121,7 @@ def complete_onboarding(user_id: UUID, payload: UserOnboardingUpdate, session: S
     user.display_name = payload.display_name
     user.nickname = payload.nickname
     user.birth_date = payload.birth_date
+    user.agent_display_name = payload.agent_display_name or user.agent_display_name or 'AGENT'
     if payload.profile_image_url is not None:
         user.profile_image_url = payload.profile_image_url
     user.preferred_event_color = payload.preferred_event_color
@@ -117,6 +145,9 @@ def update_profile(user_id: UUID, payload: UserProfileUpdate, session: Session =
 
     if payload.preferred_event_color:
         user.color = payload.preferred_event_color
+
+    if not user.agent_display_name:
+        user.agent_display_name = 'AGENT'
 
     session.add(user)
     session.commit()

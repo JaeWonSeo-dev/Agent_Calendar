@@ -7,15 +7,18 @@ from sqlmodel import Session, select
 from app.api.deps import get_db_session
 from app.models.chat import ChatMessage, ChatSession
 from app.models.event import Event
+from app.models.user import User
 from app.schemas.chat import ChatMessageCreate, ChatMessageRead, ChatSessionCreate, ChatSessionRead
 from app.services.calendar_service import CalendarService
 from app.services.chat_service import ChatService
+from app.services.discord_agent_service import DiscordAgentService
 from app.services.llm_service import LLMService
 
 router = APIRouter()
 chat_service = ChatService()
 llm_service = LLMService()
 calendar_service = CalendarService()
+discord_agent_service = DiscordAgentService()
 
 
 @router.get('/sessions', response_model=list[ChatSessionRead])
@@ -58,6 +61,52 @@ def create_message(payload: ChatMessageCreate, session: Session = Depends(get_db
     return message
 
 
+@router.post('/discord-agent/{user_id}/preview')
+def preview_discord_agent_action(user_id: UUID, body: dict, session: Session = Depends(get_db_session)) -> dict:
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail='User not found')
+
+    message = str(body.get('message', '')).strip()
+    if not message:
+        raise HTTPException(status_code=400, detail='Message is required')
+
+    plan = discord_agent_service.build_plan(message)
+    action_payload = {
+        'intent': plan.intent,
+        'params': discord_agent_service.serialize_params(plan.params),
+    }
+    return {
+        'intent': plan.intent,
+        'confidence': plan.confidence,
+        'requires_confirmation': plan.requires_confirmation,
+        'message': discord_agent_service.describe_pending_action(plan) if plan.requires_confirmation else plan.message,
+        'action_payload': action_payload,
+    }
+
+
+@router.post('/discord-agent/{user_id}/execute')
+def execute_discord_agent_action(user_id: UUID, body: dict, session: Session = Depends(get_db_session)) -> dict:
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail='User not found')
+
+    intent = str(body.get('intent', '')).strip()
+    params = body.get('params') or {}
+    if not intent:
+        raise HTTPException(status_code=400, detail='Intent is required')
+
+    plan = discord_agent_service.build_plan('')
+    plan.intent = intent
+    plan.params = params
+    plan.requires_confirmation = False
+    result_message = discord_agent_service.execute_plan(session, plan=plan, user=user)
+    return {
+        'ok': True,
+        'message': result_message,
+    }
+
+
 @router.post('/sessions/{session_id}/ask')
 def ask_chatbot(session_id: UUID, body: dict, session: Session = Depends(get_db_session)) -> dict:
     chat_session = session.get(ChatSession, session_id)
@@ -67,6 +116,10 @@ def ask_chatbot(session_id: UUID, body: dict, session: Session = Depends(get_db_
     user_message_text = str(body.get('message', '')).strip()
     if not user_message_text:
         raise HTTPException(status_code=400, detail='Message is required')
+
+    user = session.get(User, chat_session.user_id)
+    user_nickname = user.nickname or user.display_name or user.username if user else '사용자'
+    agent_name = user.agent_display_name or 'AGENT' if user else 'AGENT'
 
     history_statement = select(ChatMessage).where(ChatMessage.session_id == session_id).order_by(ChatMessage.created_at.asc())
     history = list(session.exec(history_statement).all())
@@ -102,6 +155,8 @@ def ask_chatbot(session_id: UUID, body: dict, session: Session = Depends(get_db_
         message=user_message_text,
         context=context,
         events=serialized_events,
+        user_nickname=user_nickname,
+        agent_name=agent_name,
     )
 
     assistant_message = ChatMessage(
@@ -131,5 +186,7 @@ def ask_chatbot(session_id: UUID, body: dict, session: Session = Depends(get_db_
             'raw_event_count': len(events),
             'serialized_event_count': len(serialized_events),
             'event_titles': debug_event_titles,
+            'agent_name': agent_name,
+            'user_nickname': user_nickname,
         },
     }
