@@ -13,7 +13,6 @@ from app.models.user import User
 from app.services.calendar_service import CalendarService
 
 KST = ZoneInfo('Asia/Seoul')
-UTC = ZoneInfo('UTC')
 
 
 @dataclass
@@ -95,7 +94,10 @@ class DiscordAgentService:
         normalized: dict[str, Any] = {}
         for key, value in params.items():
             if key in {'start_at', 'end_at'} and isinstance(value, str):
-                normalized[key] = datetime.fromisoformat(value)
+                parsed = datetime.fromisoformat(value)
+                if parsed.tzinfo:
+                    parsed = parsed.astimezone(KST).replace(tzinfo=None)
+                normalized[key] = parsed
             else:
                 normalized[key] = value
         return normalized
@@ -258,7 +260,7 @@ class DiscordAgentService:
             hour += 12
         if meridiem == '오전' and hour == 12:
             hour = 0
-        start_at = datetime(base_date.year, base_date.month, base_date.day, hour, minute, tzinfo=KST).astimezone(UTC)
+        start_at = datetime(base_date.year, base_date.month, base_date.day, hour, minute)
         hours = int(duration.group(1)) if duration else 1
         end_at = start_at + timedelta(hours=hours)
         title = text
@@ -294,7 +296,7 @@ class DiscordAgentService:
                 hour += 12
             if meridiem == '오전' and hour == 12:
                 hour = 0
-            start_at = datetime(base.year, base.month, base.day, hour, minute, tzinfo=KST).astimezone(UTC)
+            start_at = datetime(base.year, base.month, base.day, hour, minute)
             params['start_at'] = start_at
             params['end_at'] = start_at + timedelta(hours=1)
 
@@ -317,10 +319,11 @@ class DiscordAgentService:
         return {'title_hint': title_hint}
 
     def _parse_absolute(self, text: str) -> datetime:
-        dt = datetime.strptime(' '.join(text.split()), '%Y-%m-%d %H:%M')
-        return dt.replace(tzinfo=KST).astimezone(UTC)
+        return datetime.strptime(' '.join(text.split()), '%Y-%m-%d %H:%M')
 
     def _fmt(self, value: Any) -> str:
         if not isinstance(value, datetime):
             return str(value)
-        return value.astimezone(KST).strftime('%Y-%m-%d %H:%M')
+        if value.tzinfo:
+            value = value.astimezone(KST).replace(tzinfo=None)
+        return value.strftime('%Y-%m-%d %H:%M')
