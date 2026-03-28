@@ -112,6 +112,20 @@ def link_discord_user(user_id: UUID, payload: DiscordLinkRequest, session: Sessi
     return ProfileImageService.normalize_user_profile_image(user)
 
 
+@router.post('/{user_id}/unlink-discord', response_model=UserRead)
+def unlink_discord_user(user_id: UUID, session: Session = Depends(get_db_session)) -> User:
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail='User not found')
+
+    user.discord_user_id = None
+    user.discord_username = None
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    return ProfileImageService.normalize_user_profile_image(user)
+
+
 @router.patch('/{user_id}/onboarding', response_model=UserRead)
 def complete_onboarding(user_id: UUID, payload: UserOnboardingUpdate, session: Session = Depends(get_db_session)) -> User:
     user = session.get(User, user_id)

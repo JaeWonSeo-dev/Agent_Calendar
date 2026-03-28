@@ -9,9 +9,10 @@
 
 ## 제공 기능
 
-- `/calendar-link` : 현재 디스코드 계정을 웹 사용자와 연결
+- `/calendar-login` : DM에서 웹 아이디/비밀번호로 로그인 시작
 - `/calendar-ask` : 연결된 사용자 문맥으로 일정 질문/수정 요청 전달
 - `/calendar-my-events` : 내 일정 목록 조회
+- `/calendar-logout` : 디스코드 계정 연결 해제
 - DM 또는 봇 멘션으로 자유 대화 가능
   - 예: `내일 일정 뭐 있어?`
   - 예: `내일 오후 3시에 치과 일정 추가해줘`
@@ -20,9 +21,12 @@
 
 ## 동작 방식
 
-1. 사용자가 `/calendar-link app_user_id:<웹 사용자 UUID>` 로 본인 계정을 연결
-2. 이후 DM 또는 멘션으로 메시지를 보냄
-3. 백엔드가 메시지를 아래 중 하나로 분류
+1. 사용자가 디스코드에서 `/calendar-login` 실행
+2. 봇이 해당 사용자 DM으로 로그인 안내 전송
+3. 사용자가 DM에서 `login <웹 아이디 또는 이메일> <비밀번호>` 형식으로 로그인
+4. 성공하면 해당 디스코드 계정이 웹 사용자와 연결됨
+5. 이후 DM 또는 멘션으로 메시지를 보냄
+6. 백엔드가 메시지를 아래 중 하나로 분류
    - 일정 질문(조회)
    - 일정 생성
    - 일정 수정
@@ -56,26 +60,32 @@ Copy-Item .\backend\.env.discord.example .\backend\.env.discord
 
 ## 3) 실행
 
-백엔드가 먼저 떠 있어야 합니다.
+이제 루트에서 아래 한 줄이면 backend + frontend + discord bot 이 함께 실행됩니다.
+
+```powershell
+npm start
+```
+
+개별 실행이 필요하면 여전히 아래 명령도 가능합니다.
 
 ```powershell
 npm run backend
+npm run frontend
 npm run discord-bot
-```
-
-또는
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\manage.ps1 backend
-powershell -ExecutionPolicy Bypass -File .\scripts\manage.ps1 discord-bot
 ```
 
 ## 4) 연결 방법
 
-웹 앱에서 자기 사용자 ID(UUID)를 확인한 뒤 디스코드에서:
+디스코드에서 아래 명령을 먼저 실행:
 
 ```text
-/calendar-link app_user_id:<웹 사용자 UUID>
+/calendar-login
+```
+
+그러면 봇이 DM으로 로그인 안내를 보냅니다. 그 DM에서 아래 형식으로 답하면 됩니다.
+
+```text
+login <웹 아이디 또는 이메일> <비밀번호>
 ```
 
 연결이 완료되면 이후부터 그 디스코드 계정은 해당 사용자 일정으로 동작합니다.

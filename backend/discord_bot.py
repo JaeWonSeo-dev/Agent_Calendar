@@ -18,6 +18,7 @@ load_dotenv(BASE_DIR / '.env.discord', override=True)
 
 SESSION_CACHE_PATH = BASE_DIR / 'data' / 'discord_sessions.json'
 PENDING_ACTIONS_PATH = BASE_DIR / 'data' / 'discord_pending_actions.json'
+LOGIN_PROMPTS_PATH = BASE_DIR / 'data' / 'discord_login_prompts.json'
 SESSION_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 
@@ -60,6 +61,9 @@ class CalendarApi:
                 return None
             raise
 
+    def login_web_user(self, identifier: str, password: str) -> dict[str, Any]:
+        return self._request('POST', '/api/users/login', {'identifier': identifier, 'password': password})
+
     def link_discord_user(self, user_id: str, discord_user_id: str, discord_username: str | None) -> dict[str, Any]:
         encoded = parse.quote(user_id)
         return self._request(
@@ -67,6 +71,10 @@ class CalendarApi:
             f'/api/users/{encoded}/link-discord',
             {'discord_user_id': discord_user_id, 'discord_username': discord_username},
         )
+
+    def unlink_discord_user(self, user_id: str) -> dict[str, Any]:
+        encoded = parse.quote(user_id)
+        return self._request('POST', f'/api/users/{encoded}/unlink-discord', {})
 
     def create_chat_session(self, user_id: str, title: str) -> dict[str, Any]:
         return self._request('POST', '/api/chat/sessions', {'user_id': user_id, 'title': title})
@@ -103,6 +111,7 @@ class DiscordCalendarBot(commands.Bot):
         self.api = CalendarApi(config.api_base_url)
         self.session_cache = self._load_json(SESSION_CACHE_PATH)
         self.pending_actions = self._load_json(PENDING_ACTIONS_PATH)
+        self.login_prompts = self._load_json(LOGIN_PROMPTS_PATH)
 
     def _load_json(self, path: Path) -> dict[str, Any]:
         if not path.exists():
@@ -156,16 +165,41 @@ class DiscordCalendarBot(commands.Bot):
             return
 
         async with message.channel.typing():
-            reply = await self.handle_calendar_message(message.author, content)
+            if is_dm and str(message.author.id) in self.login_prompts:
+                reply = await self.handle_dm_login(message.author, content)
+            else:
+                reply = await self.handle_calendar_message(message.author, content, is_dm=is_dm)
         await message.reply(reply, mention_author=False)
 
-    async def handle_calendar_message(self, discord_user: discord.abc.User, content: str) -> str:
+    async def handle_dm_login(self, discord_user: discord.abc.User, content: str) -> str:
+        normalized = ' '.join(content.strip().split())
+        parts = normalized.split(' ', 2)
+        if len(parts) < 3 or parts[0].lower() != 'login':
+            return 'DM에서 `login <웹 아이디 또는 이메일> <비밀번호>` 형식으로 보내줘.'
+
+        _, identifier, password = parts
+        try:
+            user = self.api.login_web_user(identifier, password)
+            linked = self.api.link_discord_user(str(user['id']), str(discord_user.id), discord_user.name)
+            self.login_prompts.pop(str(discord_user.id), None)
+            self._save_json(LOGIN_PROMPTS_PATH, self.login_prompts)
+            return (
+                '로그인 연결 완료.\n'
+                f"- 사용자: {linked.get('nickname') or linked.get('display_name')}\n"
+                '이제 DM이나 봇 멘션으로 일정 질문/수정 요청을 보내면 돼.'
+            )
+        except Exception as exc:
+            return f'로그인 또는 계정 연결 실패: {exc}'
+
+    async def handle_calendar_message(self, discord_user: discord.abc.User, content: str, *, is_dm: bool = False) -> str:
         linked_user = self._get_linked_user(discord_user)
         if not linked_user:
-            return (
-                '아직 이 디스코드 계정이 웹 사용자와 연결되지 않았어.\n'
-                '먼저 디스코드에서 `/calendar-link app_user_id:<웹 사용자 ID>` 를 실행해줘.'
-            )
+            if is_dm:
+                return (
+                    '아직 이 디스코드 계정이 웹 사용자와 연결되지 않았어.\n'
+                    '먼저 `/calendar-login` 을 실행하거나, DM에서 `login <웹 아이디 또는 이메일> <비밀번호>` 형식으로 보내줘.'
+                )
+            return '먼저 `/calendar-login` 을 실행해서 DM에서 웹 계정 로그인을 끝내줘.'
 
         key = str(discord_user.id)
         normalized = content.strip().lower()
@@ -211,18 +245,42 @@ if not bot_config.token:
 bot = DiscordCalendarBot(bot_config)
 
 
-@bot.tree.command(name='calendar-link', description='현재 디스코드 계정을 웹 사용자와 연결합니다.')
-@app_commands.describe(app_user_id='웹 앱의 사용자 ID(UUID)')
-async def calendar_link(interaction: discord.Interaction, app_user_id: str) -> None:
+@bot.tree.command(name='calendar-login', description='DM에서 웹 계정 로그인으로 디스코드 계정을 연결합니다.')
+async def calendar_login(interaction: discord.Interaction) -> None:
     await interaction.response.defer(thinking=True, ephemeral=True)
     try:
-        linked = bot.api.link_discord_user(app_user_id, str(interaction.user.id), interaction.user.name)
-        await interaction.followup.send(
-            f"연결 완료: {linked.get('nickname') or linked.get('display_name')} ({linked.get('id')})",
-            ephemeral=True,
+        dm = interaction.user.dm_channel or await interaction.user.create_dm()
+        bot.login_prompts[str(interaction.user.id)] = True
+        bot._save_json(LOGIN_PROMPTS_PATH, bot.login_prompts)
+        await dm.send(
+            '웹 계정 연결을 시작할게.\n'
+            '이 DM에 아래 형식으로 보내줘:\n'
+            '`login <웹 아이디 또는 이메일> <비밀번호>`\n\n'
+            '예시: `login sjw@example.com mypassword123`'
         )
+        await interaction.followup.send('DM으로 로그인 안내를 보냈어. DM에서 이어서 진행해줘.', ephemeral=True)
     except Exception as exc:
-        await interaction.followup.send(f'디스코드 계정 연결 실패: {exc}', ephemeral=True)
+        await interaction.followup.send(f'DM 로그인 시작 실패: {exc}', ephemeral=True)
+
+
+@bot.tree.command(name='calendar-logout', description='현재 디스코드 계정과 연결된 웹 계정을 해제합니다.')
+async def calendar_logout(interaction: discord.Interaction) -> None:
+    await interaction.response.defer(thinking=True, ephemeral=True)
+    try:
+        linked_user = bot._get_linked_user(interaction.user)
+        if not linked_user:
+            await interaction.followup.send('현재 연결된 웹 계정이 없어.', ephemeral=True)
+            return
+        bot.api.unlink_discord_user(str(linked_user['id']))
+        bot.session_cache.pop(str(interaction.user.id), None)
+        bot.pending_actions.pop(str(interaction.user.id), None)
+        bot.login_prompts.pop(str(interaction.user.id), None)
+        bot._save_json(SESSION_CACHE_PATH, bot.session_cache)
+        bot._save_json(PENDING_ACTIONS_PATH, bot.pending_actions)
+        bot._save_json(LOGIN_PROMPTS_PATH, bot.login_prompts)
+        await interaction.followup.send('디스코드 계정 연결을 해제했어.', ephemeral=True)
+    except Exception as exc:
+        await interaction.followup.send(f'로그아웃 실패: {exc}', ephemeral=True)
 
 
 @bot.tree.command(name='calendar-ask', description='연결된 사용자 문맥으로 일정 질문/수정 요청을 보냅니다.')
@@ -243,7 +301,7 @@ async def calendar_my_events(interaction: discord.Interaction, limit: app_comman
     try:
         linked_user = bot._get_linked_user(interaction.user)
         if not linked_user:
-            await interaction.followup.send('먼저 `/calendar-link` 로 계정을 연결해줘.')
+            await interaction.followup.send('먼저 `/calendar-login` 으로 DM 로그인 연결을 해줘.')
             return
         events = bot.api.list_events(owner_user_id=str(linked_user['id']))
         events = sorted(events, key=lambda item: item['start_at'])[:limit]

@@ -76,7 +76,7 @@ switch ($Command) {
     }
     'help' {
         Write-Host 'Usage:' -ForegroundColor Cyan
-        Write-Host '  npm start' -ForegroundColor White
+        Write-Host '  npm start  (backend + frontend + discord-bot)' -ForegroundColor White
         Write-Host '  npm run stop' -ForegroundColor White
         Write-Host '  npm run backend' -ForegroundColor White
         Write-Host '  npm run frontend' -ForegroundColor White

@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "scripts": {
     "stop": "powershell -ExecutionPolicy Bypass -File ./scripts/manage.ps1 stop",
-    "start": "npm run stop && npx concurrently -n backend,frontend -c green,blue \"npm run backend\" \"npm run frontend\"",
+    "start": "npm run stop && npx concurrently -n backend,frontend,discord -c green,blue,magenta \"npm run backend\" \"npm run frontend\" \"npm run discord-bot\"",
     "backend": "powershell -ExecutionPolicy Bypass -File ./scripts/manage.ps1 backend",
     "frontend": "powershell -ExecutionPolicy Bypass -File ./scripts/manage.ps1 frontend",
     "discord-bot": "powershell -ExecutionPolicy Bypass -File ./scripts/manage.ps1 discord-bot"
