@@ -1,13 +1,16 @@
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any
+from urllib import error, request
 from zoneinfo import ZoneInfo
 
 from sqlmodel import Session, select
 
+from app.core.config import settings
 from app.models.event import Event
 from app.models.user import User
 from app.services.calendar_service import CalendarService
@@ -31,7 +34,114 @@ class DiscordAgentService:
     def build_plan(self, message: str, *, now: datetime | None = None) -> AgentActionPlan:
         now = now or datetime.now(KST)
         normalized = ' '.join(message.strip().split())
-        lower = normalized.lower()
+
+        llm_plan = self._plan_with_gemini(normalized, now=now)
+        if llm_plan is not None:
+            return llm_plan
+
+        return self._plan_with_rules(normalized, now=now)
+
+    def _plan_with_gemini(self, message: str, *, now: datetime) -> AgentActionPlan | None:
+        if not settings.gemini_api_key:
+            return None
+
+        prompt = (
+            'You are a Korean calendar action planner. '\
+            'Return strict JSON only, no markdown.\n\n'
+            'Decide one intent from: ask, create_event, update_event, delete_event.\n'
+            'Use ask for schedule questions, summaries, or when there is no safe write action.\n'
+            'Use create_event/update_event/delete_event only when the user clearly requests a calendar write.\n'
+            'For create/update/delete, default requires_confirmation=true.\n'
+            'Times are in Asia/Seoul local time.\n'
+            'If time is relative like tomorrow/오늘/모레, resolve using this current local time: '
+            f'{now.strftime("%Y-%m-%d %H:%M")}\n\n'
+            'Return JSON schema:\n'
+            '{\n'
+            '  "intent": "ask|create_event|update_event|delete_event",\n'
+            '  "confidence": 0.0,\n'
+            '  "message": "short korean summary",\n'
+            '  "requires_confirmation": true,\n'
+            '  "params": {\n'
+            '    "title": null,\n'
+            '    "description": null,\n'
+            '    "start_at": null,\n'
+            '    "end_at": null,\n'
+            '    "event_id": null,\n'
+            '    "title_hint": null\n'
+            '  }\n'
+            '}\n\n'
+            'start_at/end_at must be in YYYY-MM-DD HH:MM if known.\n'
+            'If unknown, use null.\n\n'
+            f'User message: {message}'
+        )
+
+        payload = {
+            'contents': [{'parts': [{'text': prompt}]}],
+            'generationConfig': {
+                'temperature': 0,
+                'responseMimeType': 'application/json',
+            },
+        }
+
+        req = request.Request(
+            f"{settings.gemini_base_url.rstrip('/')}/models/{settings.gemini_model}:generateContent?key={settings.gemini_api_key}",
+            data=json.dumps(payload).encode('utf-8'),
+            headers={'Content-Type': 'application/json'},
+            method='POST',
+        )
+
+        try:
+            with request.urlopen(req, timeout=20) as response:
+                data = json.loads(response.read().decode('utf-8'))
+                text = data['candidates'][0]['content']['parts'][0]['text']
+                parsed = json.loads(text)
+                return self._normalize_llm_plan(parsed)
+        except (error.HTTPError, error.URLError, KeyError, IndexError, TimeoutError, json.JSONDecodeError, ValueError):
+            return None
+
+    def _normalize_llm_plan(self, data: dict[str, Any]) -> AgentActionPlan:
+        intent = str(data.get('intent') or 'ask').strip()
+        if intent not in {'ask', 'create_event', 'update_event', 'delete_event'}:
+            intent = 'ask'
+
+        try:
+            confidence = max(0.0, min(1.0, float(data.get('confidence', 0.0))))
+        except (TypeError, ValueError):
+            confidence = 0.0
+
+        params = data.get('params') or {}
+        normalized_params: dict[str, Any] = {}
+        for key in ['title', 'description', 'event_id', 'title_hint']:
+            value = params.get(key)
+            normalized_params[key] = value if value not in {'', 'null'} else None
+
+        for key in ['start_at', 'end_at']:
+            value = params.get(key)
+            if value in {'', 'null', None}:
+                normalized_params[key] = None
+            else:
+                normalized_params[key] = self._parse_absolute(str(value))
+
+        if intent == 'ask':
+            return AgentActionPlan(
+                intent='ask',
+                confidence=confidence or 0.9,
+                message=str(data.get('message') or '일정 질문으로 처리할게요.'),
+                requires_confirmation=False,
+                params={},
+            )
+
+        requires_confirmation = bool(data.get('requires_confirmation', True))
+        return AgentActionPlan(
+            intent=intent,
+            confidence=confidence or 0.75,
+            message=str(data.get('message') or '작업 요청으로 이해했어요.'),
+            requires_confirmation=requires_confirmation,
+            params=normalized_params,
+        )
+
+    def _plan_with_rules(self, message: str, *, now: datetime) -> AgentActionPlan:
+        lower = message.lower()
 
         if self._looks_like_schedule_question(lower):
             return AgentActionPlan(
@@ -43,7 +153,7 @@ class DiscordAgentService:
             )
 
         if any(token in lower for token in ['추가', '등록', '잡아', '만들어', '생성']):
-            create_params = self._parse_create_message(normalized, now=now)
+            create_params = self._parse_create_message(message, now=now)
             if create_params:
                 return AgentActionPlan(
                     intent='create_event',
@@ -53,8 +163,8 @@ class DiscordAgentService:
                     params=create_params,
                 )
 
-        if any(token in lower for token in ['삭제', '지워', '없애', '취소']) and '일정' in normalized:
-            delete_params = self._parse_event_lookup(normalized)
+        if any(token in lower for token in ['삭제', '지워', '없애', '취소']) and '일정' in message:
+            delete_params = self._parse_event_lookup(message)
             return AgentActionPlan(
                 intent='delete_event',
                 confidence=0.7,
@@ -64,7 +174,7 @@ class DiscordAgentService:
             )
 
         if any(token in lower for token in ['옮겨', '변경', '수정', '바꿔']):
-            update_params = self._parse_update_message(normalized, now=now)
+            update_params = self._parse_update_message(message, now=now)
             return AgentActionPlan(
                 intent='update_event',
                 confidence=0.72,
